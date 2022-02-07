@@ -1,8 +1,8 @@
 import logging
 
 import difflib
-import telegram.ext
-from telegram.ext import CommandHandler, Updater
+from telegram import InlineQueryResultArticle, InputTextMessageContent
+from telegram.ext import InlineQueryHandler, Updater
 
 from fetcher import Fetcher
 from environment import Environment
@@ -17,16 +17,7 @@ dispatcher = updater.dispatcher
 
 fetcher = Fetcher()
 
-
-def prepare_message(msg):
-    return msg.replace("-", "\-") \
-              .replace(".", "\.") \
-              .replace("(", "\(") \
-              .replace(")", "\)") \
-              .replace("!", "\!") # noqa
-
-
-signs = {
+sign_map = {
     "aries": "Áries",
     "touro": "Touro",
     "gemeos": "Gêmeos",
@@ -41,31 +32,36 @@ signs = {
     "peixes": "Peixes"
 }
 
+NUMBER_OF_RESULTS = 3
+CUTOFF = 0.2
+DEFAULT_SIGN = "aries"
+
+
+def prepare_message(message):
+    return message.replace("-", "\-") \
+              .replace(".", "\.") \
+              .replace("(", "\(") \
+              .replace(")", "\)") \
+              .replace("!", "\!") # noqa
+
 
 def parse_sign(sign):
-    match = difflib.get_close_matches(sign, signs.keys(), n=1)
+    match = difflib.get_close_matches(sign,
+                                      sign_map.keys(),
+                                      n=NUMBER_OF_RESULTS,
+                                      cutoff=CUTOFF)
     if len(match) == 0:
-        return 'aries'
+        return [DEFAULT_SIGN]
 
-    return match[0]
+    return match
 
 
-# set the function command callback for the daily
-def bidu(update, context):
+def make_prediction_message(data):
     # prepare heading
-    input = context.args[0] if len(context.args) > 0 else "aries"
-    sign = parse_sign(input)
-    data = fetcher.fetch(sign)
-
-    heading = f"{data['date']} - {signs[sign]}\n\n"  # noqa
+    sign = data['sign']
+    heading = f"{data['date']} - {sign_map[sign]}\n\n"  # noqa
     working_text = "Processando..."
-    msg = prepare_message(str(heading + working_text))
-
-    # send message to show api is working
-    message = context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=msg,
-        parse_mode=telegram.ParseMode.MARKDOWN_V2)
+    message = prepare_message(str(heading + working_text))
 
     # fetch and present body info
     body = "```\n"
@@ -74,17 +70,39 @@ def bidu(update, context):
     body += f"Previsão completa em: {data['url']}\n"
 
     # parse command characters
-    msg = prepare_message(str(heading + body))
+    message = prepare_message(str(heading + body))
 
-    # edit message with daily contents
-    context.bot.edit_message_text(chat_id=update.effective_chat.id,
-                                  message_id=message["message_id"],
-                                  text=msg,
-                                  parse_mode=telegram.ParseMode.MARKDOWN_V2)
+    return message
 
 
-handler = CommandHandler("bidu", bidu)
-dispatcher.add_handler(handler)
+# set the function command callback for the daily
+def bidu(update, context):
+    query = update.inline_query.query
+
+    if not query:
+        return
+
+    signs = parse_sign(query)
+    print(signs)
+    results = []
+    for sign in signs:
+        data = fetcher.fetch(sign)
+        message = make_prediction_message(data)
+        description = data['prediction']
+
+        results.append(
+            InlineQueryResultArticle(
+                id=sign.upper(),
+                title=sign_map[sign],
+                thumb_url=data['image'],
+                description=description,
+                input_message_content=InputTextMessageContent(message)))
+
+    context.bot.answer_inline_query(update.inline_query.id, results)
+
+
+inline_handler = InlineQueryHandler(bidu)
+dispatcher.add_handler(inline_handler)
 
 updater.start_polling()
 logging.info("Bot started and listening for commands.")
