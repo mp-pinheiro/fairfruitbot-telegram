@@ -1,7 +1,7 @@
 import logging
 
 import difflib
-from telegram import InlineQueryResultArticle, InputTextMessageContent
+from telegram import InlineQueryResultArticle, InputTextMessageContent, ParseMode
 from telegram.ext import InlineQueryHandler, Updater
 
 from fetcher import Fetcher
@@ -95,7 +95,8 @@ def bidu(update, context):
                 title=sign_map[sign],
                 thumb_url=data['image'],
                 description=description,
-                input_message_content=InputTextMessageContent(message)))
+                input_message_content=InputTextMessageContent(
+                    message, parse_mode=ParseMode.MARKDOWN_V2)))
 
     context.bot.answer_inline_query(update.inline_query.id, results)
 
