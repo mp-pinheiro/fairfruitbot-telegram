@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 class Fetcher:
     def __init__(self):
         self._url = "https://joaobidu.com.br/horoscopo/signos/previsao-{sign}"
+        self._image_url = "https://joaobidu.com.br/static/img/ico-{sign}.png"
 
     def _make_soup(self, sign):
         url = self._url.format(sign=sign)
@@ -15,12 +16,6 @@ class Fetcher:
         soup = BeautifulSoup(response.text, 'html.parser')
 
         return soup
-
-    def _fetch_image(self, soup):
-        parent = soup.find('figure', class_='imgDestaque')
-        img_src = parent.find('img').get('src')
-
-        return img_src
 
     def _fetch_prediction(self, soup):
         parent = soup.find('div', class_='texto')
@@ -38,9 +33,9 @@ class Fetcher:
     def fetch(self, sign):
         soup = self._make_soup(sign)
 
-        image = self._fetch_image(soup)
         prediction = self._fetch_prediction(soup)
         date = datetime.now().strftime('%d/%m/%Y')
+        image = self._image_url.format(sign=sign)
         url = self._url.format(sign=sign)
 
         return {
