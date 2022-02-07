@@ -83,7 +83,6 @@ def bidu(update, context):
         return
 
     signs = parse_sign(query)
-    print(signs)
     results = []
     for sign in signs:
         data = fetcher.fetch(sign)
