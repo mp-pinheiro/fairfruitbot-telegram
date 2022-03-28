@@ -1,7 +1,7 @@
 import random
 from datetime import datetime
 
-from fetchers import Fetcher
+from fetchers import TarotFetcher
 from telegram import ParseMode
 from telegram.ext import CommandHandler
 from utils import get_date
@@ -12,7 +12,7 @@ class Tarot:
     def __init__(self):
         self._command = "tarot"
         self._users = {}  # TODO: make a class to handle users
-        self._fetcher = Fetcher()
+        self._fetcher = TarotFetcher()
 
     def _build_message(self, data):
         image = data['card']['image']
@@ -43,7 +43,7 @@ class Tarot:
             user['request_date'] = today
 
             index = random.randint(1, 23)
-            data = self._fetcher.fetch_tarot_prediction(index)
+            data = self._fetcher.fetch(index)
             card = {
                 "title": data['title'],
                 "body": data['body'],

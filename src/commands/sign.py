@@ -1,6 +1,6 @@
 import difflib
 
-from fetchers import Fetcher
+from fetchers import SignFetcher
 from telegram import ParseMode
 from telegram.ext import CommandHandler
 from utils import get_date
@@ -28,7 +28,7 @@ class Sign:
 
     def __init__(self):
         self._command = "bidu"
-        self._fetcher = Fetcher()
+        self._fetcher = SignFetcher()
 
     def _parse_sign(self, sign):
         match = difflib.get_close_matches(
@@ -77,7 +77,7 @@ class Sign:
         query = " ".join(args)
 
         sign = self._parse_sign(query)
-        data = self._fetcher.fetch_sign_prediction(sign)
+        data = self._fetcher.fetch(sign)
         data["date"] = get_date()
         message = self._make_prediction_message(data)
 
