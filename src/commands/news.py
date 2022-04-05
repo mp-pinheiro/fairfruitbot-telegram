@@ -3,8 +3,10 @@ from telegram import ParseMode
 from telegram.ext import CommandHandler
 from utils import get_date
 
+from commands import Command
 
-class News:
+
+class News(Command):
 
     def __init__(self):
         self._command = "news"
@@ -28,6 +30,8 @@ class News:
         return message
 
     def _process(self, update, context):
+        super()._process(update, context)
+
         data = self._fetcher.fetch()
         data["date"] = get_date()
         message = self._make_prediction_message(data)

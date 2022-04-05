@@ -6,8 +6,10 @@ from telegram import ParseMode
 from telegram.ext import CommandHandler
 from utils import get_date
 
+from commands import Command
 
-class Tarot:
+
+class Tarot(Command):
 
     def __init__(self):
         self._command = "tarot"
@@ -40,18 +42,20 @@ class Tarot:
 
         # if request date is not today, reset
         today = str(datetime.now().date())
-        if not card or not request_date or request_date != today:
+        if not request_date or request_date != today:
             user['request_date'] = today
+            oldcard = card
 
-            index = random.randint(1, 23)
-            data = self._fetcher.fetch(index)
-            card = {
-                "title": data['title'],
-                "body": data['body'],
-                "image": data['image'],
-                "url": data['url'],
-            }
-            user['card'] = card
+            while oldcard == card:
+                index = random.randint(1, 22)
+                data = self._fetcher.fetch(index)
+                card = {
+                    "title": data['title'],
+                    "body": data['body'],
+                    "image": data['image'],
+                    "url": data['url'],
+                }
+                user['card'] = card
 
         return user['card']
 
@@ -66,6 +70,8 @@ class Tarot:
         return self._users[userid]
 
     def _process(self, update, context):
+        super()._process(update, context)
+
         # fetch user data
         userid = update.message.from_user.id
         display_name = update.message.from_user.username

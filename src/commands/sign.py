@@ -5,8 +5,10 @@ from telegram import ParseMode
 from telegram.ext import CommandHandler
 from utils import get_date
 
+from commands import Command
 
-class Sign:
+
+class Sign(Command):
 
     sign_map = {
         "aries": "Áries",
@@ -73,6 +75,8 @@ class Sign:
         return message
 
     def _process(self, update, context):
+        super()._process(update, context)
+
         args = context.args
         query = " ".join(args)
 
