@@ -59,7 +59,6 @@ class NewsFetcher(Fetcher):
         response.update(data)
 
         # extract details
-        print('url', data['url'])
         soup = self._make_soup(data['url'])
         data = self._fetch_details(soup)
         response.update(data)

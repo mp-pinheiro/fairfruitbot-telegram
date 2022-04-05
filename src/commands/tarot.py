@@ -36,10 +36,11 @@ class Tarot:
 
     def _draw_card(self, user):
         request_date = user['request_date']
+        card = user['card']
 
         # if request date is not today, reset
         today = str(datetime.now().date())
-        if not request_date or request_date != today:
+        if not card or not request_date or request_date != today:
             user['request_date'] = today
 
             index = random.randint(1, 23)
