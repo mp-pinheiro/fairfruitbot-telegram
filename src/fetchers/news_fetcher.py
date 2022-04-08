@@ -1,3 +1,5 @@
+"""TODO: This module is deprecated."""
+
 from fetchers import Fetcher
 
 
@@ -5,7 +7,7 @@ class NewsFetcher(Fetcher):
 
     def __init__(self):
         super().__init__()
-        self._url = "https://joaobidu.com.br/noticias/ultimas/{news}"
+        self._url = "https://joaobidu.com.br/ultimas-noticias/"
 
     def _fetch_details(self, soup):
         # fetch news summary

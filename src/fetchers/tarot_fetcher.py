@@ -5,7 +5,7 @@ class TarotFetcher(Fetcher):
 
     def __init__(self):
         super().__init__()
-        self._url = "https://joaobidu.com.br/oraculos/taro/resultado?carta={card}"  # noqa
+        self._url = "https://oraculos.joaobidu.com.br/oraculos-novo/taro-resultado.php?carta={card}"  # noqa
 
     def _fetch(self, soup):
         parent = soup.find('div', class_='textoResultado')

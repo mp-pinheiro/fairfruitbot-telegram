@@ -9,13 +9,11 @@ class SignFetcher(Fetcher):
         self._image_url = "https://joaobidu.com.br/static/img/ico-{sign}.png"  # noqa
 
     def _fetch(self, soup):
-        parent = soup.find('div', class_='texto')
+        parent = soup.find('div', class_='theiaPostSlider_preloadedSlide')
 
         # fetch basic info
-        elements = parent.find('p', style='text-align: justify')
         prediction = ''
-        guess_of_the_day = ''
-        color_of_the_day = ''
+        elements = parent.find('div', class_='zoxrel left').children
         for element in elements:
             # if element is <br>, add newline
             if element.name == 'br':
@@ -24,6 +22,8 @@ class SignFetcher(Fetcher):
                 prediction += element.string.strip()
 
         # fetch guess and color of the day
+        guess_of_the_day = ''
+        color_of_the_day = ''
         elements = soup.find_all('p')
         for element in elements:
             text = element.get_text().lower().strip()
@@ -35,14 +35,15 @@ class SignFetcher(Fetcher):
                                                     '').strip()  # noqa
 
         # fetch more info
-        elements = parent.find('section', id='mais-sobre-signos').find('ul')
+        elements = parent.find('ul')
         more_info = []
         for li in elements.find_all('li'):
             # split li into key and value
-            key, value = li.get_text().split(': ')
+            key, value = li.get_text().strip().split(': ')
 
             # add to more info
             more_info.append({'key': key, 'value': value})
+
         return {
             'prediction': prediction,
             'guess_of_the_day': guess_of_the_day,

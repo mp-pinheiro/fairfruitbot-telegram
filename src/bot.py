@@ -2,14 +2,14 @@ import logging
 
 from telegram.ext import Updater
 
-from commands import sign, tarot, news
+from commands import sign, tarot
 from environment import Environment
 
 # load env
 env = Environment()
 
 # load commands
-commands = [sign.Sign(), tarot.Tarot(), news.News()]
+commands = [sign.Sign(), tarot.Tarot()]
 
 # fetch updater and job queue
 logging.info("Starting bot...")
