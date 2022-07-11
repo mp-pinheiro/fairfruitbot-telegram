@@ -18,7 +18,7 @@ class TarotFetcher(Fetcher):
         for text in texts:
             if text.string and text.string != '\n':
                 body += text.string
-        body = body.replace('\n', '')
+        body = body.replace('\n', '').strip()
 
         # fetch image
         parent = soup.find('div', class_='taroResultado')

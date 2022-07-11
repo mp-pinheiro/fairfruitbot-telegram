@@ -59,8 +59,7 @@ class Sign(Command):
         body = f'<a href="{image}">• </a>'  # TODO: this is a hack
         body += f"{prediction}\n\n"
         body += f"<b>Palpite do dia:</b> {guess_of_the_day}\n"
-        body += f"<b>Cor do dia:</b> {color_of_the_day}\n\n"
-        body += "Mais sobre o seu signo\n"
+        body += f"<b>Cor do dia:</b> {color_of_the_day}\n"
         body += "\n"
         body += f"Mais informações em: {url}\n"
 
