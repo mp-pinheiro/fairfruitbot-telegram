@@ -2,7 +2,6 @@ from fetchers import Fetcher
 
 
 class SignFetcher(Fetcher):
-
     def __init__(self):
         super().__init__()
         self._url = "https://joaobidu.com.br/horoscopo/signos/previsao-{sign}"  # noqa
@@ -36,19 +35,11 @@ class SignFetcher(Fetcher):
 
         # fetch more info
         elements = parent.find('ul')
-        more_info = []
-        for li in elements.find_all('li'):
-            # split li into key and value
-            key, value = li.get_text().strip().split(': ')
-
-            # add to more info
-            more_info.append({'key': key, 'value': value})
 
         return {
             'prediction': prediction,
             'guess_of_the_day': guess_of_the_day,
             'color_of_the_day': color_of_the_day,
-            'more_info': more_info
         }
 
     def fetch(self, sign):

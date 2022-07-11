@@ -17,7 +17,6 @@ def test_sign_fetch():
     assert data['prediction']
     assert data['guess_of_the_day']
     assert data['color_of_the_day']
-    assert data['more_info']
 
 
 def test_sign_command():

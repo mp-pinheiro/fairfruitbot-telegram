@@ -50,7 +50,6 @@ class Sign(Command):
         prediction = data["prediction"]
         guess_of_the_day = data["guess_of_the_day"]
         color_of_the_day = data["color_of_the_day"]
-        more_info = data["more_info"]
         url = data["url"]
 
         # prepare heading
@@ -62,10 +61,6 @@ class Sign(Command):
         body += f"<b>Palpite do dia:</b> {guess_of_the_day}\n"
         body += f"<b>Cor do dia:</b> {color_of_the_day}\n\n"
         body += "Mais sobre o seu signo\n"
-        for element in more_info:
-            key = element["key"]
-            value = element["value"]
-            body += f" • <b>{key}:</b> {value}\n"
         body += "\n"
         body += f"Mais informações em: {url}\n"
 
