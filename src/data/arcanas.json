@@ -1,0 +1,678 @@
+{
+    "0": {
+        "Fool": {
+            "category": "0",
+            "name": "Fool",
+            "url": "https://megamitensei.fandom.com/wiki/Fool_Arcana",
+            "characters": [
+                {
+                    "name": "SEES",
+                    "url": "https://megamitensei.fandom.com/wiki/Specialized_Extracurricular_Execution_Squad",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Investigation Team",
+                    "url": "https://megamitensei.fandom.com/wiki/Investigation_Team",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Igor",
+                    "url": "https://megamitensei.fandom.com/wiki/Igor",
+                    "game": "Persona 5"
+                }
+            ]
+        },
+        "Jester": {
+            "category": "0",
+            "name": "Jester",
+            "url": "https://megamitensei.fandom.com/wiki/Hunger_Arcana",
+            "characters": [
+                {
+                    "name": "Tohru Adachi",
+                    "url": "https://megamitensei.fandom.com/wiki/Tohru_Adachi",
+                    "game": "Persona 4"
+                }
+            ]
+        }
+    },
+    "I": {
+        "Magician": {
+            "category": "I",
+            "name": "Magician",
+            "url": "https://megamitensei.fandom.com/wiki/Magician_Arcana",
+            "characters": [
+                {
+                    "name": "Kenji Tomochika",
+                    "url": "https://megamitensei.fandom.com/wiki/Kenji_Tomochika",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Junpei Iori",
+                    "url": "https://megamitensei.fandom.com/wiki/Junpei_Iori",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Yosuke Hanamura",
+                    "url": "https://megamitensei.fandom.com/wiki/Yosuke_Hanamura",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Morgana",
+                    "url": "https://megamitensei.fandom.com/wiki/Morgana",
+                    "game": "Persona 5"
+                }
+            ]
+        },
+        "Councillor": {
+            "category": "I",
+            "name": "Councillor",
+            "url": "https://megamitensei.fandom.com/wiki/Councillor_Arcana",
+            "characters": [
+                {
+                    "name": "Takuto Maruki",
+                    "url": "https://megamitensei.fandom.com/wiki/Takuto_Maruki",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "II": {
+        "Priestess": {
+            "category": "II",
+            "name": "Priestess",
+            "url": "https://megamitensei.fandom.com/wiki/Priestess_Arcana",
+            "characters": [
+                {
+                    "name": "Fuuka Yamagishi",
+                    "url": "https://megamitensei.fandom.com/wiki/Fuuka_Yamagishi",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Yukiko Amagi",
+                    "url": "https://megamitensei.fandom.com/wiki/Yukiko_Amagi",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Makoto Niijima",
+                    "url": "https://megamitensei.fandom.com/wiki/Makoto_Niijima",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "III": {
+        "Empress": {
+            "category": "III",
+            "name": "Empress",
+            "url": "https://megamitensei.fandom.com/wiki/Empress_Arcana",
+            "characters": [
+                {
+                    "name": "Mitsuru Kirijo",
+                    "url": "https://megamitensei.fandom.com/wiki/Mitsuru_Kirijo",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Margaret",
+                    "url": "https://megamitensei.fandom.com/wiki/Margaret",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Haru Okumura",
+                    "url": "https://megamitensei.fandom.com/wiki/Haru_Okumura",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "IV": {
+        "Emperor": {
+            "category": "IV",
+            "name": "Emperor",
+            "url": "https://megamitensei.fandom.com/wiki/Emperor_Arcana",
+            "characters": [
+                {
+                    "name": "Hidetoshi Odagiri",
+                    "url": "https://megamitensei.fandom.com/wiki/Hidetoshi_Odagiri",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Kanji Tatsumi",
+                    "url": "https://megamitensei.fandom.com/wiki/Kanji_Tatsumi",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Yusuke Kitagawa",
+                    "url": "https://megamitensei.fandom.com/wiki/Yusuke_Kitagawa",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "V": {
+        "Hierophant": {
+            "category": "V",
+            "name": "Hierophant",
+            "url": "https://megamitensei.fandom.com/wiki/Hierophant_Arcana",
+            "characters": [
+                {
+                    "name": "Bunkichi and Mitsuko",
+                    "url": "https://megamitensei.fandom.com/wiki/Bunkichi_and_Mitsuko",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Ryotaro Dojima",
+                    "url": "https://megamitensei.fandom.com/wiki/Ryotaro_Dojima",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Sojiro Sakura",
+                    "url": "https://megamitensei.fandom.com/wiki/Sojiro_Sakura",
+                    "game": "Persona 5"
+                }
+            ]
+        },
+        "Apostle": {
+            "category": "V",
+            "name": "Apostle",
+            "url": "https://megamitensei.fandom.com/wiki/Apostle_Arcana",
+            "characters": [
+                {
+                    "name": "Zenkichi Hasegawa",
+                    "url": "https://megamitensei.fandom.com/wiki/Zenkichi_Hasegawa",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "VI": {
+        "Lovers": {
+            "category": "VI",
+            "name": "Lovers",
+            "url": "https://megamitensei.fandom.com/wiki/Lovers_Arcana",
+            "characters": [
+                {
+                    "name": "Yukari Takeba",
+                    "url": "https://megamitensei.fandom.com/wiki/Yukari_Takeba",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Rise Kujikawa",
+                    "url": "https://megamitensei.fandom.com/wiki/Rise_Kujikawa",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Ann Takamaki",
+                    "url": "https://megamitensei.fandom.com/wiki/Ann_Takamaki",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "VII": {
+        "Chariot": {
+            "category": "VII",
+            "name": "Chariot",
+            "url": "https://megamitensei.fandom.com/wiki/Chariot_Arcana",
+            "characters": [
+                {
+                    "name": "Kazushi Miyamoto",
+                    "url": "https://megamitensei.fandom.com/wiki/Kazushi_Miyamoto",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Rio Iwasaki",
+                    "url": "https://megamitensei.fandom.com/wiki/Rio_Iwasaki",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Chie Satonaka",
+                    "url": "https://megamitensei.fandom.com/wiki/Chie_Satonaka",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Ryuji Sakamoto",
+                    "url": "https://megamitensei.fandom.com/wiki/Ryuji_Sakamoto",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "VIII": {
+        "Justice": {
+            "category": "VIII",
+            "name": "Justice",
+            "url": "https://megamitensei.fandom.com/wiki/Justice_Arcana",
+            "characters": [
+                {
+                    "name": "Chihiro Fushimi",
+                    "url": "https://megamitensei.fandom.com/wiki/Chihiro_Fushimi",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Ken Amada",
+                    "url": "https://megamitensei.fandom.com/wiki/Ken_Amada",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Nanako Dojima",
+                    "url": "https://megamitensei.fandom.com/wiki/Nanako_Dojima",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Goro Akechi",
+                    "url": "https://megamitensei.fandom.com/wiki/Goro_Akechi",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "IX": {
+        "Hermit": {
+            "category": "IX",
+            "name": "Hermit",
+            "url": "https://megamitensei.fandom.com/wiki/Hermit_Arcana",
+            "characters": [
+                {
+                    "name": "\"Maya\"",
+                    "url": "https://megamitensei.fandom.com/wiki/Isako_Toriumi",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Saori Hasegawa",
+                    "url": "https://megamitensei.fandom.com/wiki/Saori_Hasegawa",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Fox",
+                    "url": "https://megamitensei.fandom.com/wiki/Fox",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Futaba Sakura",
+                    "url": "https://megamitensei.fandom.com/wiki/Futaba_Sakura",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "X": {
+        "Fortune": {
+            "category": "X",
+            "name": "Fortune",
+            "url": "https://megamitensei.fandom.com/wiki/Fortune_Arcana",
+            "characters": [
+                {
+                    "name": "Keisuke Hiraga",
+                    "url": "https://megamitensei.fandom.com/wiki/Keisuke_Hiraga",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Ryoji Mochizuki",
+                    "url": "https://megamitensei.fandom.com/wiki/Ryoji_Mochizuki",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Naoto Shirogane",
+                    "url": "https://megamitensei.fandom.com/wiki/Naoto_Shirogane",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Chihaya Mifune",
+                    "url": "https://megamitensei.fandom.com/wiki/Chihaya_Mifune",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "XI": {
+        "Strength": {
+            "category": "XI",
+            "name": "Strength",
+            "url": "https://megamitensei.fandom.com/wiki/Strength_Arcana",
+            "characters": [
+                {
+                    "name": "Yuko Nishiwaki",
+                    "url": "https://megamitensei.fandom.com/wiki/Yuko_Nishiwaki",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Koromaru",
+                    "url": "https://megamitensei.fandom.com/wiki/Koromaru",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Kou Ichijo",
+                    "url": "https://megamitensei.fandom.com/wiki/Kou_Ichijo",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Daisuke Nagase",
+                    "url": "https://megamitensei.fandom.com/wiki/Daisuke_Nagase",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Caroline and Justine",
+                    "url": "https://megamitensei.fandom.com/wiki/Caroline_and_Justine",
+                    "game": "Persona 5"
+                }
+            ]
+        },
+        "Hunger": {
+            "category": "XI",
+            "name": "Hunger",
+            "url": "https://megamitensei.fandom.com/wiki/Hunger_Arcana",
+            "characters": [
+                {
+                    "name": "Tohru Adachi",
+                    "url": "https://megamitensei.fandom.com/wiki/Tohru_Adachi",
+                    "game": "Persona 4"
+                }
+            ]
+        }
+    },
+    "XII": {
+        "Hanged Man": {
+            "category": "XII",
+            "name": "Hanged Man",
+            "url": "https://megamitensei.fandom.com/wiki/Hanged_Man_Arcana",
+            "characters": [
+                {
+                    "name": "Maiko Oohashi",
+                    "url": "https://megamitensei.fandom.com/wiki/Maiko_Oohashi",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Naoki Konishi",
+                    "url": "https://megamitensei.fandom.com/wiki/Naoki_Konishi",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Munehisa Iwai",
+                    "url": "https://megamitensei.fandom.com/wiki/Munehisa_Iwai",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "XIII": {
+        "Death": {
+            "category": "XIII",
+            "name": "Death",
+            "url": "https://megamitensei.fandom.com/wiki/Death_Arcana",
+            "characters": [
+                {
+                    "name": "Pharos",
+                    "url": "https://megamitensei.fandom.com/wiki/Pharos",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Hisano Kuroda",
+                    "url": "https://megamitensei.fandom.com/wiki/Hisano_Kuroda",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Tae Takemi",
+                    "url": "https://megamitensei.fandom.com/wiki/Tae_Takemi",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "XIV": {
+        "Temperance": {
+            "category": "XIV",
+            "name": "Temperance",
+            "url": "https://megamitensei.fandom.com/wiki/Temperance_Arcana",
+            "characters": [
+                {
+                    "name": "Andre Laurent Jean Geraux",
+                    "url": "https://megamitensei.fandom.com/wiki/Andre_Laurent_Jean_Geraux",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Eri Minami",
+                    "url": "https://megamitensei.fandom.com/wiki/Eri_Minami",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Sadayo Kawakami",
+                    "url": "https://megamitensei.fandom.com/wiki/Sadayo_Kawakami",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "XV": {
+        "Devil": {
+            "category": "XV",
+            "name": "Devil",
+            "url": "https://megamitensei.fandom.com/wiki/Devil_Arcana",
+            "characters": [
+                {
+                    "name": "President Tanaka",
+                    "url": "https://megamitensei.fandom.com/wiki/President_Tanaka",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Sayoko Uehara",
+                    "url": "https://megamitensei.fandom.com/wiki/Sayoko_Uehara",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Ichiko Ohya",
+                    "url": "https://megamitensei.fandom.com/wiki/Ichiko_Ohya",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "XVI": {
+        "Tower": {
+            "category": "XVI",
+            "name": "Tower",
+            "url": "https://megamitensei.fandom.com/wiki/Tower_Arcana",
+            "characters": [
+                {
+                    "name": "Mutatsu",
+                    "url": "https://megamitensei.fandom.com/wiki/Mutatsu",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Shu Nakajima",
+                    "url": "https://megamitensei.fandom.com/wiki/Shu_Nakajima",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Shinya Oda",
+                    "url": "https://megamitensei.fandom.com/wiki/Shinya_Oda",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "XVII": {
+        "Star": {
+            "category": "XVII",
+            "name": "Star",
+            "url": "https://megamitensei.fandom.com/wiki/Star_Arcana",
+            "characters": [
+                {
+                    "name": "Mamoru Hayase",
+                    "url": "https://megamitensei.fandom.com/wiki/Mamoru_Hayase",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Akihiko Sanada",
+                    "url": "https://megamitensei.fandom.com/wiki/Akihiko_Sanada",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Teddie",
+                    "url": "https://megamitensei.fandom.com/wiki/Teddie",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Hifumi Togo",
+                    "url": "https://megamitensei.fandom.com/wiki/Hifumi_Togo",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "XVIII": {
+        "Moon": {
+            "category": "XVIII",
+            "name": "Moon",
+            "url": "https://megamitensei.fandom.com/wiki/Moon_Arcana",
+            "characters": [
+                {
+                    "name": "Nozomi Suemitsu",
+                    "url": "https://megamitensei.fandom.com/wiki/Nozomi_Suemitsu",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Shinjiro Aragaki",
+                    "url": "https://megamitensei.fandom.com/wiki/Shinjiro_Aragaki",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Ai Ebihara",
+                    "url": "https://megamitensei.fandom.com/wiki/Ai_Ebihara",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Yuuki Mishima",
+                    "url": "https://megamitensei.fandom.com/wiki/Yuuki_Mishima",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "XIX": {
+        "Sun": {
+            "category": "XIX",
+            "name": "Sun",
+            "url": "https://megamitensei.fandom.com/wiki/Sun_Arcana",
+            "characters": [
+                {
+                    "name": "Akinari Kamiki",
+                    "url": "https://megamitensei.fandom.com/wiki/Akinari_Kamiki",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Yumi Ozawa",
+                    "url": "https://megamitensei.fandom.com/wiki/Yumi_Ozawa",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Ayane Matsunaga",
+                    "url": "https://megamitensei.fandom.com/wiki/Ayane_Matsunaga",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Toranosuke Yoshida",
+                    "url": "https://megamitensei.fandom.com/wiki/Toranosuke_Yoshida",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "XX": {
+        "Judgement": {
+            "category": "XX",
+            "name": "Judgement",
+            "url": "https://megamitensei.fandom.com/wiki/Judgement_Arcana",
+            "characters": [
+                {
+                    "name": "Nyx Annihilation Team",
+                    "url": "https://megamitensei.fandom.com/wiki/Specialized_Extracurricular_Execution_Squad",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Seekers of Truth",
+                    "url": "https://megamitensei.fandom.com/wiki/Investigation_Team",
+                    "game": "Persona 4"
+                },
+                {
+                    "name": "Sae Niijima",
+                    "url": "https://megamitensei.fandom.com/wiki/Sae_Niijima",
+                    "game": "Persona 5"
+                }
+            ]
+        },
+        "Aeon": {
+            "category": "XX",
+            "name": "Aeon",
+            "url": "https://megamitensei.fandom.com/wiki/Aeon_Arcana",
+            "characters": [
+                {
+                    "name": "Aigis",
+                    "url": "https://megamitensei.fandom.com/wiki/Aigis",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Marie",
+                    "url": "https://megamitensei.fandom.com/wiki/Marie",
+                    "game": "Persona 4"
+                }
+            ]
+        }
+    },
+    "XXI": {
+        "World": {
+            "category": "XXI",
+            "name": "World",
+            "url": "https://megamitensei.fandom.com/wiki/World_Arcana",
+            "characters": [
+                {
+                    "name": "Yu Narukami",
+                    "url": "https://megamitensei.fandom.com/wiki/Yu_Narukami",
+                    "game": "Persona 4"
+                }
+            ]
+        },
+        "Universe": {
+            "category": "XXI",
+            "name": "Universe",
+            "url": "https://megamitensei.fandom.com/wiki/Universe_Arcana",
+            "characters": [
+                {
+                    "name": "Makoto Yuki",
+                    "url": "https://megamitensei.fandom.com/wiki/Makoto_Yuki",
+                    "game": "Persona 3"
+                },
+                {
+                    "name": "Ren Amamiya",
+                    "url": "https://megamitensei.fandom.com/wiki/Ren_Amamiya",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    },
+    "Unnumbered": {
+        "Faith": {
+            "category": "Unnumbered",
+            "name": "Faith",
+            "url": "https://megamitensei.fandom.com/wiki/Faith_Arcana",
+            "characters": [
+                {
+                    "name": "Sumire Yoshizawa",
+                    "url": "https://megamitensei.fandom.com/wiki/Sumire_Yoshizawa",
+                    "game": "Persona 5"
+                }
+            ]
+        },
+        "Hope": {
+            "category": "Unnumbered",
+            "name": "Hope",
+            "url": "https://megamitensei.fandom.com/wiki/Hope_Arcana",
+            "characters": [
+                {
+                    "name": "Sophia",
+                    "url": "https://megamitensei.fandom.com/wiki/Sophia_(Persona_5_Strikers)",
+                    "game": "Persona 5"
+                }
+            ]
+        }
+    }
+}

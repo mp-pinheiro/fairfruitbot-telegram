@@ -10,17 +10,16 @@ from commands import Command
 
 
 class Tarot(Command):
-
     def __init__(self):
         self._command = "tarot"
         self._users = {}  # TODO: make a class to handle users
         self._fetcher = TarotFetcher()
 
     def _build_message(self, data):
-        image = data['card']['image']
-        title = data['card']['title']
-        prediction_body = data['card']['body']
-        url = data['card']['url']
+        image = data["card"]["image"]
+        title = data["card"]["title"]
+        prediction_body = data["card"]["body"]
+        url = data["card"]["url"]
 
         # prepare heading
         heading = f"{data['date']} - Tarot do Dia de {data['display_name']}\n\n"  # noqa
@@ -29,7 +28,21 @@ class Tarot(Command):
         body = f'<a href="{image}">• </a>'  # TODO: this is a hack
         body += f"<b>{title.upper()}</b>\n\n"
         body += f"{prediction_body}\n\n"
-        body += f"Mais informações e outras cartas em: {url}\n"
+
+        # fetch and present arcanas info
+        arcanas = data["card"]["arcanas"]
+        body += f'<a href="{image}">• </a>'  # TODO: this is a hack
+        body += "<b>PERSONAS</b>\n\n"
+        for arcana in arcanas:
+            entry = f"<a href='{arcana['url']}'>  • {arcana['name']}</a>"
+            body += f"\t{entry}\n"
+            for character in arcana["characters"]:
+                entry = f"<a href='{character['url']}'>   • {character['name']} ({character['game']})</a>"  # noqa
+                body += f"\t\t{entry}\n"
+        body += "\n"
+
+        info_url = "/".join(url.split("/")[:-2])
+        body += f"Mais informações e outras cartas em: {info_url}\n"
 
         # parse command characters
         message = str(heading + body)
@@ -37,27 +50,28 @@ class Tarot(Command):
         return message
 
     def _draw_card(self, user):
-        request_date = user['request_date']
-        card = user['card']
+        request_date = user["request_date"]
+        card = user["card"]
 
         # if request date is not today, reset
         today = str(datetime.now().date())
         if not request_date or request_date != today:
-            user['request_date'] = today
+            user["request_date"] = today
             oldcard = card
 
             while oldcard == card:
                 index = random.randint(1, 22)
                 data = self._fetcher.fetch(index)
                 card = {
-                    "title": data['title'],
-                    "body": data['body'],
-                    "image": data['image'],
-                    "url": data['url'],
+                    "title": data["title"],
+                    "body": data["body"],
+                    "image": data["image"],
+                    "url": data["url"],
+                    "arcanas": data["arcanas"],
                 }
-                user['card'] = card
+                user["card"] = card
 
-        return user['card']
+        return user["card"]
 
     def _get_user(self, userid, display_name):
         if userid not in self._users:
@@ -81,16 +95,18 @@ class Tarot(Command):
         card = self._draw_card(user)
 
         # fetch card data
-        data = {'display_name': display_name, 'card': card, 'date': get_date()}
+        data = {"display_name": display_name, "card": card, "date": get_date()}
 
         # build message
         message = self._build_message(data)
 
         # send message
-        context.bot.send_message(chat_id=update.message.chat_id,
-                                 text=message,
-                                 parse_mode=ParseMode.HTML,
-                                 disable_web_page_preview=False)
+        context.bot.send_message(
+            chat_id=update.message.chat_id,
+            text=message,
+            parse_mode=ParseMode.HTML,
+            disable_web_page_preview=False,
+        )
 
     def setup(self, dispatcher):
         inline_handler = CommandHandler(self._command, self._process)
