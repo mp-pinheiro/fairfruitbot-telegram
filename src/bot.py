@@ -1,4 +1,6 @@
 import logging
+import re
+import traceback
 
 from telegram.ext import Updater
 
@@ -19,6 +21,43 @@ dispatcher = updater.dispatcher
 # setup commands
 for command in commands:
     command.setup(dispatcher)
+
+
+def prepare_message(msg, hard_parse=False):
+    if hard_parse:
+        # hard parse is used for error messages
+        msg = re.sub(r"([^\\])", r"\\\1", msg)
+
+        # ignore markdown monospace character
+        return msg.replace("\\`", "`")
+    else:
+        return (
+            msg.replace("-", "\\-")
+            .replace(".", "\\.")
+            .replace("(", "\\(")
+            .replace(")", "\\)")
+            .replace("!", "\\!")
+        )
+
+
+# register exception handler
+def error_handler(update, context):
+    logging.error("Error: %s", context.error)
+
+    text = "Ops! Algo deu errado. O Bidu provavelmente tá de palhaçada.\n\n"
+    text += "Erro:\n"
+    text += "```\n"
+    text += traceback.format_exc()
+    text += "```"
+
+    # send error message
+    update.message.reply_text(
+        text=prepare_message(text, hard_parse=False),
+        parse_mode="MarkdownV2",
+    )
+
+
+dispatcher.add_error_handler(error_handler)
 
 # start bot
 updater.start_polling()
