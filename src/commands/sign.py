@@ -9,7 +9,6 @@ from commands import Command
 
 
 class Sign(Command):
-
     sign_map = {
         "aries": "Áries",
         "touro": "Touro",
@@ -32,6 +31,7 @@ class Sign(Command):
         self._command = "bidu"
         self._fetcher = SignFetcher()
 
+    # TODO: this is duplicated in `tarot.py`
     def _parse_sign(self, sign):
         match = difflib.get_close_matches(
             sign,
@@ -53,7 +53,9 @@ class Sign(Command):
         url = data["url"]
 
         # prepare heading
-        heading = f"{data['date']} - Horóscopo de {Sign.sign_map[sign]}\n\n"  # noqa
+        heading = (
+            f"{data['date']} - Horóscopo de {Sign.sign_map[sign]}\n\n"  # noqa
+        )
 
         # fetch and present body info
         body = f'<a href="{image}">• </a>'  # TODO: this is a hack
@@ -79,9 +81,11 @@ class Sign(Command):
         data["date"] = get_date()
         message = self._make_prediction_message(data)
 
-        context.bot.send_message(chat_id=update.message.chat_id,
-                                 text=message,
-                                 parse_mode=ParseMode.HTML)
+        context.bot.send_message(
+            chat_id=update.message.chat_id,
+            text=message,
+            parse_mode=ParseMode.HTML,
+        )
 
     def setup(self, dispatcher):
         inline_handler = CommandHandler(self._command, self._process)
