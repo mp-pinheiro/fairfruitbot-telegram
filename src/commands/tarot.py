@@ -1,38 +1,58 @@
+import difflib
 import random
 from datetime import datetime
 
-from fetchers import TarotFetcher
 from telegram import ParseMode
 from telegram.ext import CommandHandler
-from utils import get_date
 
 from commands import Command
+from fetchers import TarotFetcher
+from utils import get_date
 
 
 class Tarot(Command):
+    CUTOFF = 0.2
+
     def __init__(self):
         self._command = "tarot"
         self._users = {}  # TODO: make a class to handle users
         self._fetcher = TarotFetcher()
+
+    # TODO: this is duplicated in `sign.py`
+    def _parse_arcana(self, arcana):
+        match = difflib.get_close_matches(
+            arcana,
+            TarotFetcher.category_map.values(),
+            n=1,
+            cutoff=Tarot.CUTOFF,
+        )
+        if len(match) == 0:
+            return None
+
+        return match[0]
 
     def _build_message(self, data):
         image = data["card"]["image"]
         title = data["card"]["title"]
         prediction_body = data["card"]["body"]
         url = data["card"]["url"]
+        tarot_type = data["card"]["type"]
 
         # prepare heading
-        heading = f"{data['date']} - Tarot do Dia de {data['display_name']}\n\n"  # noqa
+        if tarot_type == "daily":
+            heading = f"{data['date']} - Tarot do Dia de {data['display_name']}\n\n"  # noqa
+        elif tarot_type == "info":
+            heading = f"{data['date']} - Info de Tarot para {data['display_name']}\n\n"  # noqa
 
         # fetch and present body info
-        body = f'<a href="{image}">• </a>'  # TODO: this is a hack
+        body = f'<a href="{image}">•  </a>'  # TODO: this is a hack
         body += f"<b>{title.upper()}</b>\n\n"
         body += f"{prediction_body}\n\n"
 
         # fetch and present arcanas info
         arcanas = data["card"]["arcanas"]
-        body += f'<a href="{image}">• </a>'  # TODO: this is a hack
-        body += "<b>PERSONAS</b>\n\n"
+        body += f'<a href="{image}">•  </a>'
+        body += "<b>PERSONA</b>\n\n"
         for arcana in arcanas:
             entry = f"<a href='{arcana['url']}'>  • {arcana['name']}</a>"
             body += f"\t{entry}\n"
@@ -41,13 +61,29 @@ class Tarot(Command):
                 body += f"\t\t{entry}\n"
         body += "\n"
 
-        info_url = "/".join(url.split("/")[:-2])
-        body += f"Mais informações e outras cartas em: {info_url}\n"
+        body += f"Mais informações em: {url}\n"
 
         # parse command characters
         message = str(heading + body)
 
         return message
+
+    def _make_card(self, arcana):
+        """Unlike `_draw_card`, this function will fabricate a card
+        with only the arcana information, no prediction. It is used
+        when the user requests a specific arcana.
+        """
+        data = self._fetcher.make(arcana)
+        card = {
+            "title": data["title"],
+            "body": data["body"],
+            "image": data["image"],
+            "url": data["url"],
+            "arcanas": data["arcanas"],
+            "type": "info",
+        }
+
+        return card
 
     def _draw_card(self, user):
         request_date = user["request_date"]
@@ -68,6 +104,7 @@ class Tarot(Command):
                     "image": data["image"],
                     "url": data["url"],
                     "arcanas": data["arcanas"],
+                    "type": "daily",
                 }
                 user["card"] = card
 
@@ -91,11 +128,26 @@ class Tarot(Command):
         display_name = update.message.from_user.username
         if not display_name:
             display_name = update.message.from_user.full_name
-        user = self._get_user(userid, display_name)
-        card = self._draw_card(user)
+
+        # determine command type (daily or info)
+        args = context.args
+        if len(args) > 0:
+            # if more than one argument, assume info
+            query = " ".join(args)
+            arcana = self._parse_arcana(query)
+            card = self._make_card(arcana)
+        else:
+            user = self._get_user(userid, display_name)
+            arcana = None
+            card = self._draw_card(user)
 
         # fetch card data
-        data = {"display_name": display_name, "card": card, "date": get_date()}
+        data = {
+            "display_name": display_name,
+            "card": card,
+            "arcana": arcana,
+            "date": get_date(),
+        }
 
         # build message
         message = self._build_message(data)
