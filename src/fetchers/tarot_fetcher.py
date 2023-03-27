@@ -106,7 +106,7 @@ class TarotFetcher(Fetcher):
             "url": "https://static.wikia.nocookie.net/megamitensei/images/b/b0/Strength-0.png/revision/latest/scale-to-width-down/130?cb=20160404202121",  # noqa
             "description": "A Força representa coragem e resiliência, personificando força interior e determinação. Ela é frequentemente vista como poderosa e destemida, mas também pode ser teimosa e dominadora.",  # noqa
         },
-        "Hanged_Man": {
+        "Hanged Man": {
             "url": "https://static.wikia.nocookie.net/megamitensei/images/2/2f/Hanged_Man.png/revision/latest/scale-to-width-down/130?cb=20160404202318",  # noqa
             "description": "O Enforcado representa sacrifício e entrega, personificando altruísmo e iluminação. Ele é frequentemente visto como não convencional e espiritual, mas também pode ser passivo e indeciso.",  # noqa
         },
