@@ -219,7 +219,8 @@ class TarotFetcher(Fetcher):
         Only persona info will be returned.
         """
         prediction = self._make(arcana)
-        url = self._wiki_url.format(arcana=arcana)
+        formatted_arcana = arcana.replace(" ", "_")
+        url = self._wiki_url.format(arcana=formatted_arcana)
 
         return {
             "title": prediction["title"],
