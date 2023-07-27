@@ -14,7 +14,7 @@ yapf = "^0.32.0"
 black = "^23.1.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = "^6.2.5"
 flake8 = "^4.0.1"
 yapf = "^0.32.0"
 
