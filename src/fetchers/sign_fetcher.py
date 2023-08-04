@@ -11,7 +11,7 @@ class SignFetcher(Fetcher):
         parent = soup.find("div", class_="theiaPostSlider_preloadedSlide")
 
         # fetch basic info
-        elements = parent.find("p", class_="MsoNormal")
+        elements = parent.find("div", class_="zoxrel left").find("p")
         prediction = elements.get_text().strip()
 
         # fetch guess and color of the day
@@ -26,9 +26,6 @@ class SignFetcher(Fetcher):
                     split[0].replace("palpite do dia:", "").strip()
                 )  # noqa
                 color_of_the_day = split[1].replace("cor do dia:", "").strip()  # noqa
-
-        # fetch more info
-        elements = parent.find("ul")
 
         return {
             "prediction": prediction,
