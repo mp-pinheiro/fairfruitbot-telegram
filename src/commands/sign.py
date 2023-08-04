@@ -53,14 +53,14 @@ class Sign(Command):
         url = data["url"]
 
         # prepare heading
-        heading = (
-            f"{data['date']} - Horóscopo de {Sign.sign_map[sign]}\n\n"  # noqa
-        )
+        heading = f"{data['date']} - Horóscopo de {Sign.sign_map[sign]}\n\n"  # noqa
 
         # fetch and present body info
         body = f'<a href="{image}">• </a>'  # TODO: this is a hack
         body += f"{prediction}\n\n"
+        body += f'<a href="{image}">• </a>'
         body += f"<b>Palpite do dia:</b> {guess_of_the_day}\n"
+        body += f'<a href="{image}">• </a>'
         body += f"<b>Cor do dia:</b> {color_of_the_day}\n"
         body += "\n"
         body += f"Mais informações em: {url}\n"
