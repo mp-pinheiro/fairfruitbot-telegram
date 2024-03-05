@@ -4,7 +4,7 @@ from fetchers import Fetcher
 class SignFetcher(Fetcher):
     def __init__(self):
         super().__init__()
-        self._url = "https://joaobidu.com.br/horoscopo/signos/previsao-{sign}"  # noqa
+        self._url = "https://joaobidu.com.br/horoscopo/signos/previsao-{sign}/"  # noqa
         self._image_url = "https://joaobidu.com.br/static/img/ico-{sign}.png"  # noqa
 
     def _fetch(self, soup):
@@ -35,6 +35,7 @@ class SignFetcher(Fetcher):
 
     def fetch(self, sign):
         url = self._url.format(sign=sign)
+        print(url)
         soup = self._make_soup(url)
 
         data = self._fetch(soup)
