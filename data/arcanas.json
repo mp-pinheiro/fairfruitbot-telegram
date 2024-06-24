@@ -356,18 +356,6 @@
                     "game": "Persona 5"
                 }
             ]
-        },
-        "Hunger": {
-            "category": "XI",
-            "name": "Hunger",
-            "url": "https://megamitensei.fandom.com/wiki/Hunger_Arcana",
-            "characters": [
-                {
-                    "name": "Tohru Adachi",
-                    "url": "https://megamitensei.fandom.com/wiki/Tohru_Adachi",
-                    "game": "Persona 4"
-                }
-            ]
         }
     },
     "XII": {
