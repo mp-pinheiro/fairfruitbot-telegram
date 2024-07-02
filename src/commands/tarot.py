@@ -3,7 +3,6 @@ import random
 from datetime import datetime
 
 from telegram import ParseMode
-from telegram.ext import CommandHandler
 
 from commands import Command
 from fetchers import TarotFetcher
@@ -14,7 +13,7 @@ class Tarot(Command):
     CUTOFF = 0.2
 
     def __init__(self):
-        self._command = "tarot"
+        self._command = "tarot_old"
         self._users = {}  # TODO: make a class to handle users
         self._fetcher = TarotFetcher()
 
@@ -85,8 +84,12 @@ class Tarot(Command):
 
         return card
 
+    def _fetch_data(self):
+        index = random.randint(1, 22)
+        return self._fetcher.fetch(index)
+
     def _draw_card(self, user):
-        request_date = user["request_date"]
+        request_date = user.get("request_date", None)
         card = user["card"]
 
         # if request date is not today, reset
@@ -96,14 +99,13 @@ class Tarot(Command):
             oldcard = card
 
             while oldcard == card:
-                index = random.randint(1, 22)
-                data = self._fetcher.fetch(index)
+                data = self._fetch_data()
                 card = {
-                    "title": data["title"],
-                    "body": data["body"],
-                    "image": data["image"],
-                    "url": data["url"],
-                    "arcanas": data["arcanas"],
+                    "title": data.get("title"),
+                    "body": data.get("body"),
+                    "image": data.get("image"),
+                    "url": data.get("url"),
+                    "arcanas": data.get("arcanas"),
                     "type": "daily",
                 }
                 user["card"] = card
@@ -121,7 +123,7 @@ class Tarot(Command):
         return self._users[userid]
 
     def _process(self, update, context):
-        super()._process(update, context)
+        telegram_message = super()._process(update, context)
 
         # fetch user data
         userid = update.message.from_user.id
@@ -153,13 +155,10 @@ class Tarot(Command):
         message = self._build_message(data)
 
         # send message
-        context.bot.send_message(
+        context.bot.edit_message_text(
             chat_id=update.message.chat_id,
             text=message,
             parse_mode=ParseMode.HTML,
+            message_id=telegram_message["message_id"],
             disable_web_page_preview=False,
         )
-
-    def setup(self, dispatcher):
-        inline_handler = CommandHandler(self._command, self._process)
-        dispatcher.add_handler(inline_handler)

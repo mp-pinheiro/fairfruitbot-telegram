@@ -4,14 +4,14 @@ import traceback
 
 from telegram.ext import Updater
 
-from commands import sign, tarot
+from commands import Sign, Tarot, SignGPT, TarotGPT
 from environment import Environment
 
 # load env
 env = Environment()
 
 # load commands
-commands = [sign.Sign(), tarot.Tarot()]
+commands = [Sign(), Tarot(), SignGPT(), TarotGPT()]
 
 # fetch updater and job queue
 logging.info("Starting bot...")
@@ -31,13 +31,7 @@ def prepare_message(msg, hard_parse=False):
         # ignore markdown monospace character
         return msg.replace("\\`", "`")
     else:
-        return (
-            msg.replace("-", "\\-")
-            .replace(".", "\\.")
-            .replace("(", "\\(")
-            .replace(")", "\\)")
-            .replace("!", "\\!")
-        )
+        return msg.replace("-", "\\-").replace(".", "\\.").replace("(", "\\(").replace(")", "\\)").replace("!", "\\!")
 
 
 # register exception handler

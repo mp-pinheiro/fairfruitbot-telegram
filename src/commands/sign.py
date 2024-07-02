@@ -1,11 +1,10 @@
 import difflib
 
-from fetchers import SignFetcher
 from telegram import ParseMode
-from telegram.ext import CommandHandler
-from utils import get_date
 
 from commands import Command
+from fetchers import SignFetcher
+from utils import get_date
 
 
 class Sign(Command):
@@ -28,7 +27,7 @@ class Sign(Command):
     DEFAULT_SIGN = "aries"
 
     def __init__(self):
-        self._command = "bidu"
+        self._command = "bidu_old"
         self._fetcher = SignFetcher()
 
     # TODO: this is duplicated in `tarot.py`
@@ -86,7 +85,3 @@ class Sign(Command):
             text=message,
             parse_mode=ParseMode.HTML,
         )
-
-    def setup(self, dispatcher):
-        inline_handler = CommandHandler(self._command, self._process)
-        dispatcher.add_handler(inline_handler)
