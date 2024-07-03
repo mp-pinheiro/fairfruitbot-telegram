@@ -1,10 +1,9 @@
 # Use the specified base image
 FROM python:3.10-alpine
 
-# Set the working directory
 WORKDIR /usr/src/app
 
-# Install necessary dependencies including Rust and curl
+# Install necessary dependencies including Rust, curl, and pipx
 RUN apk add --no-cache \
     gcc \
     musl-dev \
@@ -13,13 +12,14 @@ RUN apk add --no-cache \
     cargo \
     rust \
     make \
-    curl
+    curl \
+    && pip install --no-cache-dir pipx
 
-# Install Poetry in an isolated environment
-RUN curl -sSL https://install.python-poetry.org | python3 -
+# Install Poetry using pipx
+RUN pipx install poetry
 
-# Add Poetry to PATH
-ENV PATH="/root/.local/bin:$PATH"
+# Add pipx and Poetry to PATH
+ENV PATH="/root/.local/bin:/root/.local/pipx/venvs/poetry/bin:$PATH"
 
 # Copy the pyproject.toml and poetry.lock files to the working directory
 COPY pyproject.toml poetry.lock ./
