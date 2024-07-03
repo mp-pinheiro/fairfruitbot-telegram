@@ -15,9 +15,11 @@ RUN apk add --no-cache \
     make \
     curl
 
-# Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 - --version 1.1.11 && \
-    ln -s /root/.local/bin/poetry /usr/local/bin/poetry
+# Install Poetry in an isolated environment
+RUN curl -sSL https://install.python-poetry.org | python3 -
+
+# Add Poetry to PATH
+ENV PATH="/root/.local/bin:$PATH"
 
 # Copy the pyproject.toml and poetry.lock files to the working directory
 COPY pyproject.toml poetry.lock ./
