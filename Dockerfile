@@ -11,9 +11,9 @@ RUN apk add --no-cache \
     cargo \
     rust \
     make \
-    curl \
-    && pip install --no-cache-dir pipx \
-    && pipx ensurepath
+    curl
+
+RUN pip install --no-cache-dir pipx
 
 RUN pipx install poetry
 
@@ -24,5 +24,7 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-root --no-dev
 
 COPY . .
+
+COPY .env .env
 
 CMD ["poetry", "run", "python", "src/bot.py"]
