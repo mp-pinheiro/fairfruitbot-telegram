@@ -4,29 +4,29 @@ FROM python:3.10-alpine
 # Set the working directory
 WORKDIR /usr/src/app
 
-# Install necessary dependencies
+# Install Poetry and other necessary dependencies including Rust
 RUN apk add --no-cache \
     gcc \
     musl-dev \
     libffi-dev \
     openssl-dev \
-    gfortran \
-    build-base \
-    bash \
-    cmake \
-    git
+    cargo \
+    rust \
+    make \
+    && curl -sSL https://install.python-poetry.org | python3 - \
+    && ln -s /root/.local/bin/poetry /usr/local/bin/poetry
 
-# Upgrade pip, setuptools, and wheel
-RUN pip install --upgrade pip setuptools wheel
+# Copy the pyproject.toml and poetry.lock files to the working directory
+COPY pyproject.toml poetry.lock ./
 
-# Copy requirements.txt to the working directory
-COPY requirements.txt .
-
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies using Poetry
+RUN poetry install --no-root --no-dev
 
 # Copy the rest of the application code to the working directory
 COPY . .
 
+# Ensure the .env file is included in the working directory
+COPY .env .env
+
 # Run the application
-CMD ["python", "src/bot.py"]
+CMD ["poetry", "run", "python", "src/bot.py"]
