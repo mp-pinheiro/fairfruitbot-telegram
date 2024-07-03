@@ -19,6 +19,7 @@ class TarotFetcherGPT(TarotFetcher):
         "Inclua outros temas, mude a ordem, crie previsões diferenciadas e com personalidade. Crie narrativas "
         "envolventes e interessantes."
     )
+    PREDICTION_SIZE_CHARS = 250
 
     def __init__(self):
         super().__init__()
@@ -38,10 +39,11 @@ class TarotFetcherGPT(TarotFetcher):
             {
                 "role": "user",
                 "content": f"Escreva uma previsão de tarô para a carta: '{card}'. Responda em um único parágrafo. Use "
-                f"seus conhecimentos de tarô. Seja criativo, use metáforas e figuras de linguagem. Evite clichês. "
+                "seus conhecimentos de tarô. Seja criativo, use metáforas e figuras de linguagem. Evite clichês. "
                 "Seja claro, evite ambiguidades. Seja conciso, evite redundâncias. Não comece com 'hoje' ou 'a carta' "
                 "ou outros inícios genéricos. garanta que o texto seja atemporal, e que as previsões sejam sempre bem "
-                "diferentes umas das outras.",
+                "diferentes umas das outras. "
+                f"Responda em no máximo {TarotFetcherGPT.PREDICTION_SIZE_CHARS} caracteres.",
             },
         ]
         body = self._client.make_request(messages)
