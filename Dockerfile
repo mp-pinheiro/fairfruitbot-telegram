@@ -14,8 +14,10 @@ RUN apk add --no-cache \
     build-base \
     bash \
     cmake \
-    git \
-    && pip install --upgrade pip setuptools wheel
+    git
+
+# Upgrade pip, setuptools, and wheel
+RUN pip install --upgrade pip setuptools wheel
 
 # Copy requirements.txt to the working directory
 COPY requirements.txt .
