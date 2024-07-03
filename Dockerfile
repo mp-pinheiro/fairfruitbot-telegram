@@ -26,8 +26,5 @@ RUN /usr/local/bin/poetry install --no-root --no-dev
 # Copy the rest of the application code to the working directory
 COPY . .
 
-# Ensure the .env file is included in the working directory
-COPY .env .env
-
 # Run the application
 CMD ["/usr/local/bin/poetry", "run", "python", "src/bot.py"]
