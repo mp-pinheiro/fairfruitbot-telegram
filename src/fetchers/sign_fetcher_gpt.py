@@ -19,6 +19,7 @@ class SignFetcherGPT(Fetcher):
         "Inclua outros temas, mude a ordem, crie previsões diferenciadas e com personalidade. Crie narrativas "
         "envolventes e interessantes."
     )
+    PREDICTION_SIZE_CHARS = 400
 
     def __init__(self):
         super().__init__()
@@ -47,7 +48,8 @@ class SignFetcherGPT(Fetcher):
                 " 'nenhum'. Use palavras positivas como 'se', 'quando', 'pode', 'possível', 'talvez'. Seja "
                 "específico, evite generalizações. Seja criativo, evite clichês. Seja claro, evite ambiguidades. "
                 "Seja criativo no uso de metáforas e figuras de linguagem. Evite começar com 'Signo,' ou 'Previsão'. "
-                f"Seja conciso, evite redundâncias. ",
+                "Seja conciso, evite redundâncias. "
+                f"Responda em no máximo {SignFetcherGPT.PREDICTION_SIZE_CHARS} caracteres.",
             },
         ]
         horoscope = self._client.make_request(messages)

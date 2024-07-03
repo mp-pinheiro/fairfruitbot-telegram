@@ -6,9 +6,6 @@ category = "main"
 optional = false
 python-versions = ">=3.8"
 
-[package.dependencies]
-typing-extensions = {version = ">=4.0.0", markers = "python_version < \"3.9\""}
-
 [[package]]
 name = "anyio"
 version = "4.4.0"
@@ -30,24 +27,41 @@ trio = ["trio (>=0.23)"]
 
 [[package]]
 name = "astropy"
-version = "5.2.2"
+version = "6.1.1"
 description = "Astronomy and astrophysics core library"
+category = "main"
+optional = false
+python-versions = ">=3.10"
+
+[package.dependencies]
+astropy-iers-data = ">=0.2024.5.27.0.30.8"
+numpy = [
+    {version = ">=1.23", markers = "platform_system != \"Windows\""},
+    {version = "<2.0", markers = "platform_system == \"Windows\""},
+]
+packaging = ">=19.0"
+pyerfa = ">=2.0.1.1"
+PyYAML = ">=3.13"
+
+[package.extras]
+all = ["astropy", "astropy", "certifi", "dask", "h5py", "pyarrow (>=5.0.0)", "beautifulsoup4", "html5lib", "bleach", "pandas", "sortedcontainers", "pytz", "jplephem", "mpmath", "asdf-astropy (>=0.3)", "bottleneck", "ipython (>=4.2)", "pytest (>=7.0)", "fsspec[http] (>=2023.4.0)", "s3fs (>=2023.4.0)", "pre-commit"]
+docs = ["astropy", "sphinx", "sphinx-astropy[confv2] (>=1.9.1)", "pytest (>=7.0)", "sphinx-changelog (>=1.2.0)", "sphinx-design", "Jinja2 (>=3.1.3)", "sphinxcontrib-globalsubs (>=0.1.1)", "matplotlib (!=3.9.0)", "numpy (<2.0)", "tomli"]
+recommended = ["scipy (>=1.8)", "matplotlib (>=3.3,!=3.4.0,!=3.5.2)"]
+test = ["pytest (>=7.0)", "pytest-doctestplus (>=0.12)", "pytest-astropy-header (>=0.2.1)", "pytest-astropy (>=0.10)", "pytest-xdist", "threadpoolctl"]
+test-all = ["astropy", "objgraph", "ipython (>=4.2)", "coverage", "skyfield (>=1.20)", "sgp4 (>=2.3)", "array-api-strict"]
+typing = ["typing-extensions (>=4.0.0)"]
+
+[[package]]
+name = "astropy-iers-data"
+version = "0.2024.7.1.0.34.3"
+description = "IERS Earth Rotation and Leap Second tables for the astropy core package"
 category = "main"
 optional = false
 python-versions = ">=3.8"
 
-[package.dependencies]
-numpy = ">=1.20"
-packaging = ">=19.0"
-pyerfa = ">=2.0"
-PyYAML = ">=3.13"
-
 [package.extras]
-all = ["scipy (>=1.5)", "matplotlib (>=3.1,!=3.4.0,!=3.5.2)", "certifi", "dask", "h5py", "pyarrow (>=5.0.0)", "beautifulsoup4", "html5lib", "bleach", "pandas", "sortedcontainers", "pytz", "jplephem", "mpmath", "asdf (>=2.10.0)", "bottleneck", "ipython (>=4.2)", "pytest (>=7.0)", "typing-extensions (>=3.10.0.1)", "fsspec[http] (>=2022.8.2)", "s3fs (>=2022.8.2)"]
-docs = ["sphinx", "sphinx-astropy (>=1.6)", "pytest (>=7.0)", "scipy (>=1.3)", "matplotlib (>=3.1,!=3.4.0,!=3.5.2)", "sphinx-changelog (>=1.2.0)", "Jinja2 (>=3.0)"]
-recommended = ["scipy (>=1.5)", "matplotlib (>=3.1,!=3.4.0,!=3.5.2)"]
-test = ["pytest (>=7.0)", "pytest-doctestplus (>=0.12)", "pytest-astropy-header (>=0.2.1)", "pytest-astropy (>=0.10)", "pytest-xdist"]
-test_all = ["pytest (>=7.0)", "pytest-doctestplus (>=0.12)", "pytest-astropy-header (>=0.2.1)", "pytest-astropy (>=0.10)", "pytest-xdist", "objgraph", "ipython (>=4.2)", "coverage", "skyfield (>=1.20)", "sgp4 (>=2.3)"]
+docs = ["pytest"]
+test = ["pytest", "pytest-remotedata", "hypothesis"]
 
 [[package]]
 name = "astroquery"
@@ -350,21 +364,6 @@ perf = ["ipython"]
 test = ["pytest (>=6,<8.1.0 || >=8.2.0)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-mypy", "pytest-enabler (>=2.2)", "pytest-ruff (>=0.2.1)", "packaging", "pyfakefs", "flufl.flake8", "pytest-perf (>=0.9.2)", "jaraco.test (>=5.4)", "importlib-resources (>=1.3)"]
 
 [[package]]
-name = "importlib-resources"
-version = "6.4.0"
-description = "Read resources from Python packages"
-category = "main"
-optional = false
-python-versions = ">=3.8"
-
-[package.dependencies]
-zipp = {version = ">=3.1.0", markers = "python_version < \"3.10\""}
-
-[package.extras]
-docs = ["sphinx (>=3.5)", "sphinx (<7.2.5)", "jaraco.packaging (>=9.3)", "rst.linker (>=1.9)", "furo", "sphinx-lint", "jaraco.tidelift (>=1.4)"]
-testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-ruff (>=0.2.1)", "zipp (>=3.17)", "jaraco.test (>=5.4)", "pytest-mypy"]
-
-[[package]]
 name = "iniconfig"
 version = "2.0.0"
 description = "brain-dead simple config-ini parsing"
@@ -450,7 +449,6 @@ python-versions = ">=3.8"
 
 [package.dependencies]
 importlib-metadata = {version = ">=4.11.4", markers = "python_version < \"3.12\""}
-importlib-resources = {version = "*", markers = "python_version < \"3.9\""}
 "jaraco.classes" = "*"
 "jaraco.context" = "*"
 "jaraco.functools" = "*"
@@ -489,11 +487,19 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "numpy"
-version = "1.24.4"
+version = "1.26.4"
 description = "Fundamental package for array computing in Python"
 category = "main"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
+
+[[package]]
+name = "numpy"
+version = "2.0.0"
+description = "Fundamental package for array computing in Python"
+category = "main"
+optional = false
+python-versions = ">=3.9"
 
 [[package]]
 name = "openai"
@@ -582,7 +588,7 @@ python-versions = ">=3.8"
 
 [[package]]
 name = "pydantic"
-version = "2.7.4"
+version = "2.8.0"
 description = "Data validation using Python type hints"
 category = "main"
 optional = false
@@ -590,15 +596,18 @@ python-versions = ">=3.8"
 
 [package.dependencies]
 annotated-types = ">=0.4.0"
-pydantic-core = "2.18.4"
-typing-extensions = ">=4.6.1"
+pydantic-core = "2.20.0"
+typing-extensions = [
+    {version = ">=4.12.2", markers = "python_version >= \"3.13\""},
+    {version = ">=4.6.1", markers = "python_version < \"3.13\""},
+]
 
 [package.extras]
 email = ["email-validator (>=2.0.0)"]
 
 [[package]]
 name = "pydantic-core"
-version = "2.18.4"
+version = "2.20.0"
 description = "Core functionality for Pydantic validation and serialization"
 category = "main"
 optional = false
@@ -609,14 +618,14 @@ typing-extensions = ">=4.6.0,<4.7.0 || >4.7.0"
 
 [[package]]
 name = "pyerfa"
-version = "2.0.0.3"
+version = "2.0.1.4"
 description = "Python bindings for ERFA"
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.9"
 
 [package.dependencies]
-numpy = ">=1.17"
+numpy = ">=1.19"
 
 [package.extras]
 docs = ["sphinx-astropy (>=1.3)"]
@@ -894,13 +903,14 @@ test = ["pytest (>=6,<8.1.0 || >=8.2.0)", "pytest-checkdocs (>=2.4)", "pytest-co
 
 [metadata]
 lock-version = "1.1"
-python-versions = "^3.8"
-content-hash = "5c4faeba5db33810d307879fbc7aaf2ef64f5a3f27af9a678654b85b898d2053"
+python-versions = "^3.10"
+content-hash = "ba2ab779bcb9780c434cd2f934268bfbb4715038709359cbdddc25ee7ca4d35a"
 
 [metadata.files]
 annotated-types = []
 anyio = []
 astropy = []
+astropy-iers-data = []
 astroquery = []
 atomicwrites = []
 attrs = []
@@ -933,7 +943,6 @@ httpcore = []
 httpx = []
 idna = []
 importlib-metadata = []
-importlib-resources = []
 iniconfig = []
 "jaraco.classes" = []
 "jaraco.context" = []

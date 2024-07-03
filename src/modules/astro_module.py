@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from astropy.coordinates import GeocentricTrueEcliptic, get_body, get_moon, get_sun, solar_system_ephemeris
+from astropy.coordinates import GeocentricTrueEcliptic, get_body, solar_system_ephemeris
 from astropy.time import Time
 from skyfield.api import load
 
@@ -35,14 +35,15 @@ class AstroModule:
         }
         self.ts = load.timescale()
         self.planets_ephem = load("de440s.bsp")
+        self.request = {}
 
     def _get_planet_position(self, planet_key, datetime_obj):
         time_obj = Time(datetime_obj)
         with solar_system_ephemeris.set("de430"):
             if planet_key == "sun":
-                coord = get_sun(time_obj).transform_to(GeocentricTrueEcliptic())
+                coord = get_body("sun", time_obj).transform_to(GeocentricTrueEcliptic())
             elif planet_key == "moon":
-                coord = get_moon(time_obj).transform_to(GeocentricTrueEcliptic())
+                coord = get_body("moon", time_obj).transform_to(GeocentricTrueEcliptic())
             else:
                 coord = get_body(planet_key, time_obj).transform_to(GeocentricTrueEcliptic())
         ra = coord.lon.deg % 360
@@ -55,13 +56,16 @@ class AstroModule:
         return "Unknown"
 
     def get_astro_for_signs(self, datetime_str):
-        datetime_obj = datetime.fromisoformat(datetime_str)
-        positions = {planet: self._get_planet_position(key, datetime_obj) for planet, key in self.planets.items()}
-        results = {}
-        for planet, (ra, dec) in positions.items():
-            if ra is not None and dec is not None:
-                zodiac_sign = self._determine_zodiac_sign(ra)
-                results[planet] = zodiac_sign
-            else:
-                results[planet] = "Unknown"
-        return results
+        if datetime_str not in self.request:
+            datetime_obj = datetime.fromisoformat(datetime_str)
+            positions = {planet: self._get_planet_position(key, datetime_obj) for planet, key in self.planets.items()}
+            results = {}
+            for planet, (ra, dec) in positions.items():
+                if ra is not None and dec is not None:
+                    zodiac_sign = self._determine_zodiac_sign(ra)
+                    results[planet] = zodiac_sign
+                else:
+                    results[planet] = "Unknown"
+            self.request[datetime_str] = results
+
+        return self.request[datetime_str]
