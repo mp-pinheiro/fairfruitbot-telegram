@@ -25,6 +25,4 @@ RUN poetry install --no-root --no-dev
 
 COPY . .
 
-COPY .env .env
-
 CMD ["poetry", "run", "python", "src/bot.py"]
