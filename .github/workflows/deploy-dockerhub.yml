@@ -17,6 +17,10 @@ jobs:
     if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm/v7]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,22 +44,40 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-${{ matrix.platform }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-
+            ${{ runner.os }}-buildx-${{ matrix.platform }}-
 
-      - name: Build and push to GHCR and Docker Hub
+      - name: Build and push to GHCR
         run: |
-          docker buildx build --platform linux/amd64,linux/arm/v7 \
+          docker buildx build --platform ${{ matrix.platform }} \
             --cache-from type=local,src=/tmp/.buildx-cache \
             --cache-to type=local,dest=/tmp/.buildx-cache,mode=max \
             -t ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:dev \
-            -t ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev \
             --push .
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Pull and tag from GHCR
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:dev --platform ${{ matrix.platform }}
+          docker tag ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:dev ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev-${{ matrix.platform }}
+
+      - name: Push to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev-${{ matrix.platform }}
 
   promote:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm/v7]
 
     steps:
       - name: Checkout code
@@ -74,8 +96,8 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Promote multi-platform image
+      - name: Promote images
         run: |
-          docker pull ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:dev
-          docker tag ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:dev ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest
+          docker pull ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:dev --platform ${{ matrix.platform }}
+          docker tag ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:dev ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest-${{ matrix.platform }}
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest-${{ matrix.platform }}
