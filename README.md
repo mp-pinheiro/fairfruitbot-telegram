@@ -1,3 +1,3 @@
 # Fairfruit Bot
 
-Currently just doing João Bidu horoscope.
+Horoscope predictions, tarot and disgusting Persona weebery.

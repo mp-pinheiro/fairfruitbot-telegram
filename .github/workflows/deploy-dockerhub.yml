@@ -36,8 +36,7 @@ jobs:
 
       - name: Build and push to GHCR
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:${{ env.TAG }} .
-          docker push ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:${{ env.TAG }}
+          docker buildx build --platform linux/arm/v7 -t ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:${{ env.TAG }} --push .
 
       - name: Pull from GHCR
         run: docker pull ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:${{ env.TAG }}
