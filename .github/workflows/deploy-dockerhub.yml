@@ -17,10 +17,6 @@ jobs:
     if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        platform: [linux/amd64, linux/arm/v7]
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,13 +39,13 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.platform }}-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.platform }}-
+            ${{ runner.os }}-buildx-
 
       - name: Build and push to Docker Hub
         run: |
-          docker buildx build --platform ${{ matrix.platform }} \
+          docker buildx build --platform linux/amd64,linux/arm/v7 \
             --cache-from type=local,src=/tmp/.buildx-cache \
             --cache-to type=local,dest=/tmp/.buildx-cache,mode=max \
             -t ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev \
@@ -72,6 +68,5 @@ jobs:
       - name: Promote multi-platform image
         run: |
           docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev
-          docker buildx imagetools create \
-            --tag ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest \
-            ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev
+          docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest
