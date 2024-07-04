@@ -59,10 +59,6 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        platform: [linux/amd64, linux/arm/v7]
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -73,8 +69,9 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Promote images
+      - name: Promote multi-platform image
         run: |
-          docker pull --platform ${{ matrix.platform }} ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev
-          docker tag --platform ${{ matrix.platform }} ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest
-          docker push --platform ${{ matrix.platform }} ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest-${{ matrix.platform }}
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev
+          docker buildx imagetools create \
+            --tag ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest \
+            ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev
