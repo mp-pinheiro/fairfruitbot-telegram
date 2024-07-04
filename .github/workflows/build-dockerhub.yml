@@ -1,4 +1,4 @@
-name: Build and Promote Docker Image
+name: Build Image
 
 on:
   push:
@@ -13,7 +13,6 @@ on:
 
 jobs:
   build:
-    if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
 
     steps:
@@ -35,11 +34,13 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Cache Docker layers
+        id: cache-docker-layers
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-${{ hashFiles('Dockerfile', 'pyproject.toml', 'poetry.lock') }}-${{ github.sha }}
           restore-keys: |
+            ${{ runner.os }}-buildx-${{ hashFiles('Dockerfile', 'pyproject.toml', 'poetry.lock') }}-
             ${{ runner.os }}-buildx-
 
       - name: Build and push to Docker Hub
