@@ -53,7 +53,7 @@ jobs:
           docker buildx build --platform ${{ matrix.platform }} \
             --cache-from type=local,src=/tmp/.buildx-cache \
             --cache-to type=local,dest=/tmp/.buildx-cache,mode=max \
-            -t ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:${{ env.TAG }} \
+            -t ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:${{ env.TAG }}-${{ matrix.platform }} \
             --push .
 
       - name: Login to Docker Hub
@@ -64,18 +64,21 @@ jobs:
 
       - name: Pull and tag from GHCR
         run: |
-          docker pull ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:${{ env.TAG }} \
-            --platform ${{ matrix.platform }}
-          docker tag ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:${{ env.TAG }} \
-            ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:${{ env.TAG }}
+          docker pull ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:${{ env.TAG }}-${{ matrix.platform }}
+          docker tag ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:${{ env.TAG }}-${{ matrix.platform }} \
+            ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:${{ env.TAG }}-${{ matrix.platform }}
 
       - name: Push to Docker Hub
         run: |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:${{ env.TAG }}
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:${{ env.TAG }}-${{ matrix.platform }}
 
   promote:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm/v7]
 
     steps:
       - name: Checkout code
@@ -94,12 +97,9 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Pull and tag from GHCR
+      - name: Promote images
         run: |
-          docker pull ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:dev
-          docker tag ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:dev \
-            ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest
-
-      - name: Push to Docker Hub
-        run: |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest
+          docker pull ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:dev-${{ matrix.platform }}
+          docker tag ghcr.io/${{ github.repository_owner }}/fairfruitbot-telegram:dev-${{ matrix.platform }} \
+            ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest-${{ matrix.platform }}
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest-${{ matrix.platform }}
