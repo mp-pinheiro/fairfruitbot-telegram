@@ -67,6 +67,6 @@ jobs:
 
       - name: Promote multi-platform image
         run: |
-          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev
-          docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest
+          docker buildx imagetools create ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:dev \
+            --tag ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest
+          docker buildx imagetools inspect ${{ secrets.DOCKER_HUB_USERNAME }}/fairfruitbot-telegram:latest
