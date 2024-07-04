@@ -15,14 +15,11 @@ RUN apk add --no-cache \
     ninja \
     curl
 
-RUN pip install --no-cache-dir pipx
-
-RUN pipx install poetry
+RUN pip install --no-cache-dir pipx && pipx ensurepath && pipx install poetry
 
 ENV PATH="/root/.local/bin:/root/.local/pipx/venvs/poetry/bin:$PATH"
 
 COPY pyproject.toml poetry.lock ./
-
 RUN poetry install --no-root --only main
 
 COPY . .
