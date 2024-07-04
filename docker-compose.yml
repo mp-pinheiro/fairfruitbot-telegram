@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  fairfruitbot-telegram:
+    image: fairfruit/fairfruitbot-telegram:latest
+    env_file:
+      - ./.env
+    volumes:
+      - ./.env:/usr/src/app/.env
+    command: poetry run python src/bot.py
+    restart: always
