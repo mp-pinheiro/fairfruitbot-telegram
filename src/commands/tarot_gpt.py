@@ -42,7 +42,7 @@ class TarotGPT(Tarot):
                 body += f"\t\t{entry}\n"
         body += "\n"
 
-        body += "Para mais informações, jogue Persona, mas não seja um vagabundo miserável como certas pessoas e faça o final completo do Persona 4.\n"  # noqa
+        body += "body += Predição gerada por Bidu-GPT\n\n"
 
         return heading + body
 

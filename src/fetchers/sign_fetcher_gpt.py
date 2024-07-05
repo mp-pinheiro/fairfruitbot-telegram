@@ -19,7 +19,7 @@ class SignFetcherGPT(Fetcher):
         "Inclua outros temas, mude a ordem, crie previsões diferenciadas e com personalidade. Crie narrativas "
         "envolventes e interessantes."
     )
-    PREDICTION_SIZE_CHARS = 400
+    PREDICTION_SIZE_CHARS = 425
 
     def __init__(self):
         super().__init__()

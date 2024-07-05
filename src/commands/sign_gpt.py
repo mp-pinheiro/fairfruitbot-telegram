@@ -28,7 +28,7 @@ class SignGPT(Sign):
         body += f'<a href="{image}">• </a>'
         body += f"<b>Cor do dia:</b> {color_of_the_day}\n\n"
 
-        body += "Para mais informações, chore com o final do Persona 3.\n"  # noqa
+        body += "Predição gerada por Bidu-GPT\n\n"
 
         # parse command characters
         message = str(heading + body)
