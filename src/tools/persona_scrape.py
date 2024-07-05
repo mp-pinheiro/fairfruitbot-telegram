@@ -1,4 +1,5 @@
 import json
+
 from bs4 import BeautifulSoup
 
 html = """
@@ -609,9 +610,7 @@ for row in rows:
     # add characters (expand the list to match the number of games)
     for game, characters in games.items():
         for name, url in characters:
-            arcanas[category][arcana_name]["characters"].append(
-                {"name": name, "url": url, "game": game}
-            )
+            arcanas[category][arcana_name]["characters"].append({"name": name, "url": url, "game": game})
 
 # manually add the protagonists
 arcanas["XXI"]["Universe"]["characters"].append(
@@ -637,5 +636,5 @@ arcanas["XXI"]["Universe"]["characters"].append(
 )
 
 # save to json
-with open("arcanas.json", "wb") as f:
+with open("data/arcanas.json", "wb") as f:
     f.write(json.dumps(arcanas, indent=4).encode("utf-8"))
