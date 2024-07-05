@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from astropy.coordinates import GeocentricTrueEcliptic, get_body, solar_system_ephemeris
@@ -36,6 +37,8 @@ class AstroModule:
         self.ts = load.timescale()
         self.planets_ephem = load("de440s.bsp")
         self.request = {}
+        with open("data/planet_data.json", "r") as f:
+            self.calculated_positions = json.load(f)
 
     def _get_planet_position(self, planet_key, datetime_obj):
         time_obj = Time(datetime_obj)
@@ -55,17 +58,25 @@ class AstroModule:
                 return sign
         return "Unknown"
 
+    def get_positions(self, datetime_obj):
+        positions = {planet: self._get_planet_position(key, datetime_obj) for planet, key in self.planets.items()}
+        results = {}
+        for planet, (ra, dec) in positions.items():
+            if ra is not None and dec is not None:
+                zodiac_sign = self._determine_zodiac_sign(ra)
+                results[planet] = zodiac_sign
+            else:
+                results[planet] = "Unknown"
+        return results
+
     def get_astro_for_signs(self, datetime_str):
         if datetime_str not in self.request:
             datetime_obj = datetime.fromisoformat(datetime_str)
-            positions = {planet: self._get_planet_position(key, datetime_obj) for planet, key in self.planets.items()}
-            results = {}
-            for planet, (ra, dec) in positions.items():
-                if ra is not None and dec is not None:
-                    zodiac_sign = self._determine_zodiac_sign(ra)
-                    results[planet] = zodiac_sign
-                else:
-                    results[planet] = "Unknown"
+            date_str = datetime_obj.strftime("%Y-%m-%d")
+            if date_str in self.calculated_positions:
+                results = self.calculated_positions[date_str]
+            else:
+                results = self.get_positions(datetime_obj)
             self.request[datetime_str] = results
 
         return self.request[datetime_str]
