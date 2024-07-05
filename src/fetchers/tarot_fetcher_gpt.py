@@ -43,7 +43,7 @@ class TarotFetcherGPT(TarotFetcher):
                 "Seja claro, evite ambiguidades. Seja conciso, evite redundâncias. Não comece com 'hoje' ou 'a carta' "
                 "ou outros inícios genéricos. garanta que o texto seja atemporal, e que as previsões sejam sempre bem "
                 "diferentes umas das outras. "
-                f"Responda em no máximo {TarotFetcherGPT.PREDICTION_SIZE_CHARS} caracteres.",
+                f"Responda em aproximadamente {TarotFetcherGPT.PREDICTION_SIZE_CHARS} caracteres (20% mais ou menos)",
             },
         ]
         body = self._client.make_request(messages)

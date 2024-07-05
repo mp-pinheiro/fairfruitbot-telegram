@@ -19,7 +19,7 @@ class SignFetcherGPT(Fetcher):
         "Inclua outros temas, mude a ordem, crie previsões diferenciadas e com personalidade. Crie narrativas "
         "envolventes e interessantes."
     )
-    PREDICTION_SIZE_CHARS = 425
+    PREDICTION_SIZE_CHARS = 370
 
     def __init__(self):
         super().__init__()
@@ -49,7 +49,7 @@ class SignFetcherGPT(Fetcher):
                 "específico, evite generalizações. Seja criativo, evite clichês. Seja claro, evite ambiguidades. "
                 "Seja criativo no uso de metáforas e figuras de linguagem. Evite começar com 'Signo,' ou 'Previsão'. "
                 "Seja conciso, evite redundâncias. "
-                f"Responda em no máximo {SignFetcherGPT.PREDICTION_SIZE_CHARS} caracteres.",
+                f"Responda em aproximadamente {SignFetcherGPT.PREDICTION_SIZE_CHARS} caracteres (20% mais ou menos)",
             },
         ]
         horoscope = self._client.make_request(messages)

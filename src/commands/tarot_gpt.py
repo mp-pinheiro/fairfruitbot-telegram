@@ -42,7 +42,7 @@ class TarotGPT(Tarot):
                 body += f"\t\t{entry}\n"
         body += "\n"
 
-        body += "body += Predição gerada por Bidu-GPT.\n\n"
+        body += "Predição gerada por Bidu-GPT.\n\n"
 
         return heading + body
 
