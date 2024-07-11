@@ -19,7 +19,7 @@ class SignFetcherGPT(Fetcher):
         "Inclua outros temas, mude a ordem, crie previsões diferenciadas e com personalidade. Crie narrativas "
         "envolventes e interessantes."
     )
-    PREDICTION_SIZE_CHARS = 370
+    PREDICTION_SIZE_CHARS = 420
 
     def __init__(self):
         super().__init__()
@@ -72,10 +72,10 @@ class SignFetcherGPT(Fetcher):
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": "Qual é a cor do dia para o signo de {sign}? Responda com uma única palavra. "
-                "Use cores criativas, evite cores simples como apenas 'vermelho' ou 'amarelo'. Use suas "
-                "habilidades astrológicas. Seja conciso, evite redundâncias. Use como base o seguinte horóscopo: "
-                f"{horoscope} e a seguinte previsão: {guess_of_the_day}.",
+                "content": "Qual é a cor do dia para o signo de {sign}? Responda com uma única palavra "
+                "no formato 'cor'. Use cores criativas, evite cores simples como apenas 'vermelho' ou 'amarelo'. "
+                "Use suas habilidades astrológicas. Seja conciso, evite redundâncias. Use como base o seguinte "
+                f"horóscopo: {horoscope} e a seguinte previsão: {guess_of_the_day}.",
             },
         ]
 

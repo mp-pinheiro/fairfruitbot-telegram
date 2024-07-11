@@ -19,7 +19,7 @@ class TarotFetcherGPT(TarotFetcher):
         "Inclua outros temas, mude a ordem, crie previsões diferenciadas e com personalidade. Crie narrativas "
         "envolventes e interessantes."
     )
-    PREDICTION_SIZE_CHARS = 300
+    PREDICTION_SIZE_CHARS = 320
 
     def __init__(self):
         super().__init__()
@@ -29,6 +29,12 @@ class TarotFetcherGPT(TarotFetcher):
     def _fetch(self, card):
         now = datetime.utcnow() - timedelta(hours=3)
         today = now.strftime("%Y-%m-%d %H:%M:%S - %A")
+
+        # persona info
+        category = TarotFetcher.tarot_map[card]
+        arcana_name = TarotFetcher.category_map[category]
+        arcanas = self._arcanas[category].values()
+        title = f"{card} ({arcana_name})"
 
         # tarot prediction
         now = now.isoformat()
@@ -42,17 +48,11 @@ class TarotFetcherGPT(TarotFetcher):
                 "seus conhecimentos de tarô. Seja criativo, use metáforas e figuras de linguagem. Evite clichês. "
                 "Seja claro, evite ambiguidades. Seja conciso, evite redundâncias. Não comece com 'hoje' ou 'a carta' "
                 "ou outros inícios genéricos. garanta que o texto seja atemporal, e que as previsões sejam sempre bem "
-                "diferentes umas das outras. "
+                f"diferentes umas das outras. Sem mencionar diretamente Persona, use os dados: '{arcanas}'. "
                 f"Responda em aproximadamente {TarotFetcherGPT.PREDICTION_SIZE_CHARS} caracteres (20% mais ou menos)",
             },
         ]
         body = self._client.make_request(messages)
-
-        # fetch persona info
-        category = TarotFetcher.tarot_map[card]
-        arcana_name = TarotFetcher.category_map[category]
-        arcanas = self._arcanas[category].values()
-        title = f"{card} ({arcana_name})"
 
         # fetch image
         image = TarotFetcher.arcana_map[arcana_name]["url"]
