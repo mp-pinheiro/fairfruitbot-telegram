@@ -59,7 +59,7 @@ class SignFetcherGPT(Fetcher):
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": "Qual é o palpite do dia para o signo de {sign}? Responda com três números no formato "
+                "content": f"Qual é o palpite do dia para o signo de {sign}? Responda com três números no formato "
                 "'X, Y e Z' e apenas isso. Use suas habilidades astrológicas. Seja conciso, evite redundâncias. "
                 "Use suas habilidades astrológicas. Seja conciso, evite redundâncias. Use como base o seguinte "
                 f"horóscopo: {horoscope}.",
@@ -72,8 +72,8 @@ class SignFetcherGPT(Fetcher):
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": "Qual é a cor do dia para o signo de {sign}? Responda com uma única palavra "
-                "no formato 'cor'. Use cores criativas, evite cores simples como apenas 'vermelho' ou 'amarelo'. "
+                "content": f"Qual é a cor do dia para o signo de {sign}? Responda com uma única palavra "
+                "para o signo. Use cores criativas, evite cores simples como apenas 'vermelho' ou 'amarelo'. "
                 "Use suas habilidades astrológicas. Seja conciso, evite redundâncias. Use como base o seguinte "
                 f"horóscopo: {horoscope} e a seguinte previsão: {guess_of_the_day}.",
             },
