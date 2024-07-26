@@ -46,9 +46,10 @@ class TarotFetcherGPT(TarotFetcher):
                 "role": "user",
                 "content": f"Escreva uma previsão de tarô para a carta: '{card}'. Responda em um único parágrafo. Use "
                 "seus conhecimentos de tarô. Seja criativo, use metáforas e figuras de linguagem. Evite clichês. "
-                "Seja claro, evite ambiguidades. Seja conciso, evite redundâncias. Não comece com 'hoje' ou 'a carta' "
+                "Seja claro, evite ambiguidades. Arrisque, seja sinistro até. Não comece com 'hoje' ou 'a carta' "
                 "ou outros inícios genéricos. garanta que o texto seja atemporal, e que as previsões sejam sempre bem "
                 f"diferentes umas das outras. Sem mencionar diretamente Persona, use os dados: '{arcanas}'. "
+                "Faça previsões arriscadas, seja o menos genérico possível. Seja muito ousado, dê conselhos e futuro. "
                 f"Responda em aproximadamente {TarotFetcherGPT.PREDICTION_SIZE_CHARS} caracteres (20% mais ou menos)",
             },
         ]

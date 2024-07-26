@@ -16,7 +16,7 @@ class SignFetcherGPT(Fetcher):
         "repetir o mesmo 'segundou' várias vezes. As posições dos planetas e estrelas são: {planets}, use-as "
         "com parcimônia, sem sobrecarregar o texto com informações astrológicas. Seja criativo e use-as de forma "
         "sutil e natural. Não use uma estrutura fixa (exemplo: primeiro planetas, depois amor, depois trabalho, etc). "
-        "Inclua outros temas, mude a ordem, crie previsões diferenciadas e com personalidade. Crie narrativas "
+        "Inclua sempre outros temas, mude a ordem, crie previsões diferenciadas e com personalidade. Crie narrativas "
         "envolventes e interessantes."
     )
     PREDICTION_SIZE_CHARS = 420
@@ -42,13 +42,14 @@ class SignFetcherGPT(Fetcher):
             {
                 "role": "user",
                 "content": f"Escreva um horóscopo para o signo de {sign}. Responda em um único parágrafo. Use seus "
-                "conhecimentos astrológicos. Seja consistente, fale de amor, vida, trabalho, saúde, dinheiro, etc. "
-                "no meio do texto. Não hesite em fazer previsões neutras ou negativas, seja realista, a vida das "
-                "pessoas não é sempre positiva. Não use palavras negativas como 'não', 'nunca', 'nada', 'ninguém',"
-                " 'nenhum'. Use palavras positivas como 'se', 'quando', 'pode', 'possível', 'talvez'. Seja "
+                "conhecimentos astrológicos. Seja consistente, fale de temas importantes para a vida e o dia-a-dia. "
+                "Não hesite em fazer previsões neutras ou negativas, arrisque, seja sinistro até. A vida das "
+                "pessoas não é sempre positiva. Não use palavras negativas como 'não', 'nunca', 'nada', 'ninguém', "
+                "'nenhum'. Use palavras positivas como 'se', 'quando', 'pode', 'possível', 'talvez'. Seja "
                 "específico, evite generalizações. Seja criativo, evite clichês. Seja claro, evite ambiguidades. "
                 "Seja criativo no uso de metáforas e figuras de linguagem. Evite começar com 'Signo,' ou 'Previsão'. "
-                "Seja conciso, evite redundâncias. "
+                "Seja conciso, evite redundâncias. Faça previsões arriscadas, seja o menos genérico possível. "
+                "Seja extremamente ousado, dê conselhos, preveja o futuro. "
                 f"Responda em aproximadamente {SignFetcherGPT.PREDICTION_SIZE_CHARS} caracteres (20% mais ou menos)",
             },
         ]
@@ -73,7 +74,7 @@ class SignFetcherGPT(Fetcher):
             {
                 "role": "user",
                 "content": f"Qual é a cor do dia para o signo de {sign}? Responda com uma única palavra "
-                "para o signo. Use cores criativas, evite cores simples como apenas 'vermelho' ou 'amarelo'. "
+                "para o signo, sem formatação. Use cores criativas, evite cores simples como apenas 'Vermelho.'. "
                 "Use suas habilidades astrológicas. Seja conciso, evite redundâncias. Use como base o seguinte "
                 f"horóscopo: {horoscope} e a seguinte previsão: {guess_of_the_day}.",
             },
