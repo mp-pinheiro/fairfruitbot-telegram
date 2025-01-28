@@ -3,7 +3,7 @@ python-telegram-bot==12.6.1
 requests==2.27.1
 python-dotenv==0.19.2
 black==23.1.0
-openai==1.3.8
+openai==1.60.2
 astroquery==0.4.7
 skyfield==1.49
 python-dateutil==2.9.0
