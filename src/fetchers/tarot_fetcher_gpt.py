@@ -26,7 +26,9 @@ class TarotFetcherGPT(TarotFetcher):
         # tarot prediction
         now = now.isoformat()
         results = self._astro.get_astro_for_signs(now)
-        system_prompt = SignFetcherGPT.MODEL_SYSTEM_PROMPT.format(today=today, planets=results)
+        system_prompt = SignFetcherGPT.MODEL_SYSTEM_PROMPT.format(
+            today=today, planets=results
+        )
         messages = [
             {"role": "system", "content": system_prompt},
             {
@@ -37,9 +39,9 @@ class TarotFetcherGPT(TarotFetcher):
                 "ou outros inícios genéricos. Garanta que o texto seja atemporal, e que as previsões sejam sempre bem "
                 f"diferentes umas das outras. Sem mencionar diretamente Persona, use os dados: '{arcanas}'. "
                 "Faça previsões arriscadas, seja o menos genérico possível. Seja muito ousado, dê conselhos e futuro "
-                "com exatidão (ex: 'você vai ganhar na loteria'), de forma única e vidente, e sempre criativa, pra "
-                "garantir que a previsão seja incrível. A carta deve ter um papel central na previsão. A previsão deve "
-                "obrigatoriamente ter uma previsão de futuro específica baseada nos termos acima. Extrapole nos chutes."
+                "com exatidão, de forma única e vidente, e sempre criativa, pra que a previsão seja incrível. A carta "
+                "deve ter um papel central na previsão. A previsão deve obrigatoriamente ter uma previsão de futuro "
+                "específica baseada nos termos acima. Extrapole nos chutes. "
                 f"Responda em aproximadamente {TarotFetcherGPT.PREDICTION_SIZE_CHARS} caracteres (20% mais ou menos)",
             },
         ]

@@ -17,7 +17,7 @@ class SignFetcherGPT(Fetcher):
         "com parcimônia, **sem** sobrecarregar o texto com informações astronômicas. Seja criativo e use-as de forma "
         "sutil e natural. Não use uma estrutura fixa (exemplo: primeiro planetas, depois amor, depois trabalho, etc). "
         "Inclua outros temas, mude a ordem, crie previsões diferenciadas e com personalidade. Crie narrativas "
-        "envolventes e interessantes. Faça previsões ousadas, chute mesmo. Seja impessoal, sem nomes ou referências. "
+        "envolventes e interessantes. Faça previsões ousadas, chute mesmo. Seja impessoal, sem nomes ou lugares. "
     )
     PREDICTION_SIZE_CHARS = 420
 
@@ -36,7 +36,9 @@ class SignFetcherGPT(Fetcher):
         results = self._astro.get_astro_for_signs(now)
 
         # horoscope prediction
-        system_prompt = SignFetcherGPT.MODEL_SYSTEM_PROMPT.format(today=today, planets=results)
+        system_prompt = SignFetcherGPT.MODEL_SYSTEM_PROMPT.format(
+            today=today, planets=results
+        )
         messages = [
             {"role": "system", "content": system_prompt},
             {
