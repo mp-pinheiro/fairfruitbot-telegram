@@ -1,3 +1,4 @@
+import random
 from datetime import datetime, timedelta
 
 from clients import OpenAIClient
@@ -58,34 +59,30 @@ class SignFetcherGPT(Fetcher):
         horoscope = self._client.make_request(messages)
 
         # guess of the day
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {
-                "role": "user",
-                "content": f"Qual é o palpite do dia para o signo de {sign}? Responda com três números no formato "
-                "'X, Y e Z' e apenas isso. Use suas habilidades astrológicas. Seja conciso, evite redundâncias. "
-                "Use suas habilidades astrológicas. Seja conciso, evite redundâncias. Use como base o seguinte "
-                f"horóscopo: {horoscope}.",
-            },
-        ]
-        guess_of_the_day = self._client.make_request(messages)
+        guesses = []
+        while len(guesses) < 3:
+            guess = random.randint(1, 99)
+            if guess not in guesses:
+                guesses.append(guess)
+        guesses = sorted(guesses)
+        guess_of_the_day = ", ".join([f"{guess}" for guess in guesses])
+        guess_of_the_day = f"{guess_of_the_day}."
 
         # color of the day
         messages = [
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": f"Qual é a cor do dia para o signo de {sign}? Responda com uma única palavra "
-                "para o signo, sem formatação. Use cores criativas, evite cores simples como apenas 'Vermelho.'. "
-                "Use suas habilidades astrológicas. Seja conciso, evite redundâncias. Use como base o seguinte "
-                f"horóscopo: {horoscope} e a seguinte previsão: {guess_of_the_day}.",
+                "content": f"Responda com uma única palavra para uma cor, sem formatação. Use cores criativas e "
+                f"inusitadas, evite cores simples como apenas 'Vermelho' ou 'Azul'. Baseie-se na previsão: '{horoscope}'. ",
             },
         ]
+        color_of_the_day = f"{self._client.make_request(messages)}."
 
         return {
             "prediction": horoscope,
             "guess_of_the_day": guess_of_the_day,
-            "color_of_the_day": self._client.make_request(messages),
+            "color_of_the_day": color_of_the_day,
         }
 
     def fetch(self, sign):
