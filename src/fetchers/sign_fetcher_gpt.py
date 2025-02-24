@@ -77,7 +77,7 @@ class SignFetcherGPT(Fetcher):
                 f"inusitadas, evite cores simples como apenas 'Vermelho' ou 'Azul'. Baseie-se na previsão: '{horoscope}'. ",
             },
         ]
-        color_of_the_day = f"{self._client.make_request(messages)}."
+        color_of_the_day = f"{self._client.make_request(messages)}"
 
         return {
             "prediction": horoscope,
