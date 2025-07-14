@@ -13,6 +13,7 @@ class Tarot(Command):
     CUTOFF = 0.2
 
     def __init__(self):
+        super().__init__()
         self._command = "tarot_old"
         self._users = {}  # TODO: make a class to handle users
         self._fetcher = TarotFetcher()
