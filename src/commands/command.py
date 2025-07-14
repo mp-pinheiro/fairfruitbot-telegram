@@ -4,6 +4,7 @@ from telegram import ParseMode
 from telegram.ext import CommandHandler
 
 from modules import Singleton
+from environment import Environment
 
 
 class Command(metaclass=Singleton):
@@ -11,6 +12,16 @@ class Command(metaclass=Singleton):
         # override in subclass
         self._command = None
         self._fetcher = None
+        self._env = Environment()
+
+    def _is_user_authorized(self, user_id):
+        """Check if user is authorized to use bot commands."""
+        # If no allowed user IDs are configured, allow all users
+        if not self._env.allowed_user_ids:
+            return True
+        
+        # Check if user ID is in the allowed list
+        return user_id in self._env.allowed_user_ids
 
     def _process(self, update, context):
         # override in subclass, call super()
@@ -20,6 +31,21 @@ class Command(metaclass=Singleton):
         channel = update.message.chat.id
         if not display_name:
             display_name = update.message.from_user.full_name
+            
+        # Check authorization first
+        if not self._is_user_authorized(userid):
+            logging.warning(
+                f"Unauthorized access attempt - "
+                f"command: {self._command} - "
+                f"user: ({userid}) {display_name} - "
+                f"channel: {channel}"
+            )
+            return context.bot.send_message(
+                chat_id=update.message.chat_id,
+                text="🚫 Você não tem permissão para usar este comando.",
+                parse_mode=ParseMode.HTML,
+            )
+            
         logging.info(
             f"command: {self._command} - "
             f"user: ({userid}) {display_name} - "

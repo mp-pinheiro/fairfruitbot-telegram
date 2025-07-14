@@ -28,6 +28,26 @@ class Environment(metaclass=Singleton):
 
         return env_var
 
+    def _validate_optional(self, key, default=None):
+        """Validate optional environment variable with default value."""
+        env_var = os.getenv(key)
+        if not env_var:
+            return default
+        return env_var
+
+    def _parse_id_list(self, env_var_value):
+        """Parse comma-separated list of IDs and convert to integers."""
+        if not env_var_value:
+            return []
+        
+        try:
+            # Split by comma, strip whitespace, convert to int, filter out empty strings
+            ids = [int(id_str.strip()) for id_str in env_var_value.split(',') if id_str.strip()]
+            return ids
+        except ValueError as e:
+            logging.error(f'Invalid ID format in environment variable: {e}')
+            return []
+
     def __init__(self):
         # set the logging stuff
         logging.basicConfig(
@@ -36,3 +56,19 @@ class Environment(metaclass=Singleton):
 
         # set env vars
         self.telegram_token = self._validate('TELEGRAM_TOKEN')
+        
+        # Parse allowed user IDs (optional - if not set, all users can use the bot)
+        allowed_users_str = self._validate_optional('ALLOWED_USER_IDS')
+        self.allowed_user_ids = self._parse_id_list(allowed_users_str)
+        
+        # Parse summary group IDs (optional - defaults to original hardcoded group)
+        summary_groups_str = self._validate_optional('SUMMARY_GROUP_IDS', '-1001467780714')
+        self.summary_group_ids = self._parse_id_list(summary_groups_str)
+        
+        # Log configuration for debugging
+        if self.allowed_user_ids:
+            logging.info(f"Bot access restricted to user IDs: {self.allowed_user_ids}")
+        else:
+            logging.info("Bot access open to all users")
+            
+        logging.info(f"Summary feature enabled for group IDs: {self.summary_group_ids}")

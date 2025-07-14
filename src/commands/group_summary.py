@@ -5,11 +5,13 @@ from telegram.ext import MessageHandler, Filters
 
 from clients import OpenAIClient
 from modules import Singleton
+from environment import Environment
 
 
 class GroupSummary(metaclass=Singleton):
     def __init__(self):
-        self._target_group_id = -1001467780714
+        self._env = Environment()
+        self._target_group_ids = self._env.summary_group_ids
         self._trigger_patterns = [
             "6 falam",
             "vcs falam",
@@ -17,13 +19,13 @@ class GroupSummary(metaclass=Singleton):
             "6️⃣"
         ]
         self._openai_client = OpenAIClient()
-        # Store recent messages from the target group
+        # Store recent messages from the target groups
         self._message_buffer = deque(maxlen=100)
 
     def _should_trigger(self, message_text, chat_id):
         """Check if message should trigger the summary feature."""
-        # Check if it's the target group
-        if chat_id != self._target_group_id:
+        # Check if it's one of the target groups
+        if chat_id not in self._target_group_ids:
             return False
 
         # Check if message contains any trigger patterns
@@ -36,7 +38,7 @@ class GroupSummary(metaclass=Singleton):
 
     def _store_message(self, message):
         """Store a message in the buffer for later summarization."""
-        if message.chat_id == self._target_group_id and message.text:
+        if message.chat_id in self._target_group_ids and message.text:
             # Store relevant message info
             user_name = message.from_user.username or message.from_user.first_name or "Usuário"
             message_data = {

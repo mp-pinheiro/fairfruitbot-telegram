@@ -1,5 +1,6 @@
 from unittest.mock import Mock, patch
 import pytest
+import os
 from commands.group_summary import GroupSummary
 from modules.singleton import Singleton
 
@@ -8,14 +9,19 @@ def teardown_function():
     """Clear singleton instances after each test."""
     if GroupSummary in Singleton._instances:
         del Singleton._instances[GroupSummary]
+    # Also clear Environment singleton
+    from environment import Environment
+    if Environment in Singleton._instances:
+        del Singleton._instances[Environment]
 
 
+@patch.dict(os.environ, {'TELEGRAM_TOKEN': 'test_token'})
 @patch('commands.group_summary.OpenAIClient')
 def test_group_summary_initialization(mock_openai_client):
     """Test that GroupSummary initializes correctly."""
     mock_openai_client.return_value = Mock()
     summary = GroupSummary()
-    assert summary._target_group_id == -1001467780714
+    assert -1001467780714 in summary._target_group_ids  # Default group should be included
     assert "6 falam" in summary._trigger_patterns
     assert "vcs falam" in summary._trigger_patterns
     assert "ces falam" in summary._trigger_patterns
@@ -23,6 +29,7 @@ def test_group_summary_initialization(mock_openai_client):
     assert len(summary._message_buffer) == 0
 
 
+@patch.dict(os.environ, {'TELEGRAM_TOKEN': 'test_token'})
 @patch('commands.group_summary.OpenAIClient')
 def test_should_trigger_correct_group(mock_openai_client):
     """Test trigger detection for correct group."""
@@ -42,6 +49,7 @@ def test_should_trigger_correct_group(mock_openai_client):
     assert not summary._should_trigger("hello world", -1001467780714)
 
 
+@patch.dict(os.environ, {'TELEGRAM_TOKEN': 'test_token'})
 @patch('commands.group_summary.OpenAIClient')
 def test_store_message(mock_openai_client):
     """Test message storage functionality."""
@@ -67,6 +75,7 @@ def test_store_message(mock_openai_client):
     assert stored_msg["text"] == "Test message"
 
 
+@patch.dict(os.environ, {'TELEGRAM_TOKEN': 'test_token'})
 @patch('commands.group_summary.OpenAIClient')
 def test_get_recent_messages(mock_openai_client):
     """Test recent message retrieval."""
@@ -98,6 +107,7 @@ def test_get_recent_messages(mock_openai_client):
     assert "user2: message 2" in messages
 
 
+@patch.dict(os.environ, {'TELEGRAM_TOKEN': 'test_token'})
 @patch('commands.group_summary.OpenAIClient')
 def test_summarize_messages(mock_openai_client):
     """Test message summarization functionality."""
@@ -130,6 +140,7 @@ def test_summarize_messages(mock_openai_client):
     assert 'user1: Olá pessoal!' in messages_arg[1]['content']
 
 
+@patch.dict(os.environ, {'TELEGRAM_TOKEN': 'test_token'})
 @patch('commands.group_summary.OpenAIClient')  
 def test_process_trigger_message(mock_openai_client):
     """Test processing a message that triggers the summary."""
@@ -170,6 +181,7 @@ def test_process_trigger_message(mock_openai_client):
     assert "Resumo: conversa sobre diversos tópicos." in call_args[1]['text']
 
 
+@patch.dict(os.environ, {'TELEGRAM_TOKEN': 'test_token'})
 @patch('commands.group_summary.OpenAIClient')
 def test_process_insufficient_messages(mock_openai_client):
     """Test processing when there aren't enough messages to summarize."""
@@ -205,6 +217,7 @@ def test_process_insufficient_messages(mock_openai_client):
     assert "ainda não tenho mensagens suficientes" in call_args[1]['text']
 
 
+@patch.dict(os.environ, {'TELEGRAM_TOKEN': 'test_token'})
 @patch('commands.group_summary.OpenAIClient')
 def test_process_wrong_group(mock_openai_client):
     """Test that messages from wrong group don't trigger summary."""
@@ -227,3 +240,97 @@ def test_process_wrong_group(mock_openai_client):
     
     # Verify no response was sent
     context.bot.send_message.assert_not_called()
+
+
+@patch('commands.group_summary.OpenAIClient')
+def test_multiple_groups_configuration(mock_openai_client):
+    """Test that GroupSummary supports multiple groups from environment."""
+    with patch.dict(os.environ, {
+        'TELEGRAM_TOKEN': 'test_token',
+        'SUMMARY_GROUP_IDS': '-111,-222,-333'
+    }):
+        mock_openai_client.return_value = Mock()
+        summary = GroupSummary()
+        
+        # Should have all configured groups
+        assert -111 in summary._target_group_ids
+        assert -222 in summary._target_group_ids
+        assert -333 in summary._target_group_ids
+        assert len(summary._target_group_ids) == 3
+
+
+@patch('commands.group_summary.OpenAIClient')
+def test_trigger_in_multiple_groups(mock_openai_client):
+    """Test trigger detection works in all configured groups."""
+    with patch.dict(os.environ, {
+        'TELEGRAM_TOKEN': 'test_token',
+        'SUMMARY_GROUP_IDS': '-111,-222,-333'
+    }):
+        mock_openai_client.return_value = Mock()
+        summary = GroupSummary()
+        
+        # Should trigger in all configured groups
+        assert summary._should_trigger("6 falam", -111)
+        assert summary._should_trigger("6 falam", -222)
+        assert summary._should_trigger("6 falam", -333)
+        
+        # Should not trigger in unconfigured groups
+        assert not summary._should_trigger("6 falam", -444)
+        assert not summary._should_trigger("6 falam", -999)
+
+
+@patch('commands.group_summary.OpenAIClient')
+def test_store_messages_from_multiple_groups(mock_openai_client):
+    """Test message storage from multiple configured groups."""
+    with patch.dict(os.environ, {
+        'TELEGRAM_TOKEN': 'test_token',
+        'SUMMARY_GROUP_IDS': '-111,-222,-333'
+    }):
+        mock_openai_client.return_value = Mock()
+        summary = GroupSummary()
+        summary._message_buffer.clear()
+        
+        # Create messages from different groups
+        for group_id in [-111, -222, -333]:
+            message = Mock()
+            message.chat_id = group_id
+            message.text = f"Test message from group {group_id}"
+            message.from_user.username = "testuser"
+            message.from_user.first_name = "Test"
+            message.date = "2024-01-01"
+            
+            summary._store_message(message)
+        
+        # Should have stored messages from all groups
+        assert len(summary._message_buffer) == 3
+        
+        # Verify messages are from different groups
+        stored_texts = [msg["text"] for msg in summary._message_buffer]
+        assert "Test message from group -111" in stored_texts
+        assert "Test message from group -222" in stored_texts
+        assert "Test message from group -333" in stored_texts
+
+
+@patch('commands.group_summary.OpenAIClient')
+def test_ignore_messages_from_unconfigured_groups(mock_openai_client):
+    """Test that messages from unconfigured groups are ignored."""
+    with patch.dict(os.environ, {
+        'TELEGRAM_TOKEN': 'test_token',
+        'SUMMARY_GROUP_IDS': '-111,-222'
+    }):
+        mock_openai_client.return_value = Mock()
+        summary = GroupSummary()
+        summary._message_buffer.clear()
+        
+        # Try to store message from unconfigured group
+        message = Mock()
+        message.chat_id = -999  # Not in configured groups
+        message.text = "Test message from unconfigured group"
+        message.from_user.username = "testuser"
+        message.from_user.first_name = "Test"
+        message.date = "2024-01-01"
+        
+        summary._store_message(message)
+        
+        # Should not store the message
+        assert len(summary._message_buffer) == 0
