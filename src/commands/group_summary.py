@@ -14,66 +14,38 @@ class GroupSummary(metaclass=Singleton):
         self._target_group_ids = self._env.summary_group_ids
         self._trigger_patterns = ["6 falam", "vcs falam", "ces falam", "6️⃣"]
         self._openai_client = OpenAIClient()
-        # store recent messages from the target groups
-        self._message_buffer = deque(maxlen=100)
+        # use a more conservative buffer size for better memory management
+        self._message_buffer = deque(maxlen=50)
 
     def _should_trigger(self, message_text, chat_id):
-        try:
-            # check if it's one of the target groups
-            if chat_id not in self._target_group_ids:
-                return False
-
-            # safely check if message contains any trigger patterns
-            if not message_text:
-                return False
-                
-            message_lower = message_text.lower()
-            for pattern in self._trigger_patterns:
-                if pattern.lower() in message_lower:
-                    return True
-
+        # check if it's one of the target groups
+        if chat_id not in self._target_group_ids:
             return False
-        except Exception as e:
-            logging.error(f"Error in _should_trigger: {e}")
-            return False  # Fail safely by not triggering
+
+        # check if message contains any trigger patterns
+        message_lower = message_text.lower()
+        for pattern in self._trigger_patterns:
+            if pattern.lower() in message_lower:
+                return True
+
+        return False
 
     def _store_message(self, message):
-        # Add safety checks to prevent any failures in message storage
-        try:
-            if not message or not hasattr(message, 'chat_id') or not hasattr(message, 'text'):
-                return
-                
-            if message.chat_id not in self._target_group_ids or not message.text:
-                return
-                
-            # safely extract user name with fallbacks
+        if message.chat_id in self._target_group_ids and message.text:
             try:
                 user_name = (
-                    message.from_user.username or 
-                    message.from_user.first_name or 
-                    f"User_{message.from_user.id}" if message.from_user else "Unknown"
+                    message.from_user.username or message.from_user.first_name or "Usuário"
                 )
-            except (AttributeError, TypeError):
-                user_name = "Unknown"
-            
-            # safely extract timestamp
-            try:
-                timestamp = message.date
-            except (AttributeError, TypeError):
-                from datetime import datetime
-                timestamp = datetime.now()
-            
-            message_data = {
-                "user": user_name,
-                "text": message.text,
-                "timestamp": timestamp,
-            }
-            self._message_buffer.append(message_data)
-            
-        except Exception as e:
-            # Log the error but don't let it propagate and break message logging
-            logging.error(f"Error in _store_message: {e}")
-            logging.debug(f"Message object: {message}")  # Add debug info
+                message_data = {
+                    "user": user_name,
+                    "text": message.text,
+                    "timestamp": message.date,
+                }
+                self._message_buffer.append(message_data)
+            except Exception as e:
+                logging.error(f"Failed to store message: {e}")
+                # re-raise to let caller know storage failed
+                raise
 
     def _get_recent_messages(self, limit=100):
         try:
@@ -131,54 +103,33 @@ class GroupSummary(metaclass=Singleton):
             return "Erro ao processar o resumo."
 
     def _process(self, update, context):
-        # Early validation with minimal processing to ensure logging happens first
-        if not update or not update.message:
-            return
-        
         message = update.message
-        if not message.text:
+        if not message or not message.text:
             return
 
         chat_id = message.chat_id
         message_text = message.text
 
-        # Only process messages from target groups
-        if chat_id not in self._target_group_ids:
-            return
-
-        # Log the message FIRST and ALWAYS - this is the critical functionality
-        # Wrap in try-catch to ensure this never fails and stops processing
+        # log the message for debugging - do this first to ensure logging happens
         try:
             user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
             logging.info(
                 f"GroupSummary - chat: {chat_id} - user: {user_info} - text: {message_text}"
             )
-        except Exception as e:
-            # Use a fallback logging approach if user info extraction fails
-            try:
-                logging.info(f"GroupSummary - chat: {chat_id} - user: [ERROR getting user info] - text: {message_text}")
-                logging.debug(f"Error extracting user info: {e}")
-            except Exception as e2:
-                # Last resort logging
-                logging.error(f"Critical error in GroupSummary message logging: {e2}")
+        except Exception:
+            logging.info(f"GroupSummary - chat: {chat_id} - text: {message_text}")
 
-        # Store messages from target groups - isolated from logging
+        # always store messages from the target group for later summarization
         try:
             self._store_message(message)
         except Exception as e:
-            logging.error(f"Error storing message in GroupSummary: {e}")
-
-        # Check if this message should trigger the summary - isolated from logging
-        try:
-            should_trigger = self._should_trigger(message_text, chat_id)
-        except Exception as e:
-            logging.error(f"Error checking trigger in GroupSummary: {e}")
+            logging.error(f"GroupSummary processing stopped due to storage failure: {e}")
             return
 
-        if not should_trigger:
+        # check if this message should trigger the summary
+        if not self._should_trigger(message_text, chat_id):
             return
 
-        # Summary generation and sending - isolated from logging
         try:
             # get recent messages from our buffer
             recent_messages = self._get_recent_messages()
@@ -205,16 +156,13 @@ class GroupSummary(metaclass=Singleton):
             )
 
         except Exception as e:
-            logging.error(f"Error in GroupSummary summary processing: {e}")
-            try:
-                # send error message
-                context.bot.send_message(
-                    chat_id=chat_id,
-                    text="Ops! Não consegui processar o resumo agora.",
-                    parse_mode=ParseMode.HTML,
-                )
-            except Exception as e2:
-                logging.error(f"Error sending error message in GroupSummary: {e2}")
+            logging.error(f"Error in GroupSummary._process: {e}")
+            # send error message
+            context.bot.send_message(
+                chat_id=chat_id,
+                text="Ops! Não consegui processar o resumo agora.",
+                parse_mode=ParseMode.HTML,
+            )
 
     def setup(self, dispatcher):
         message_handler = MessageHandler(Filters.text & Filters.group, self._process)
