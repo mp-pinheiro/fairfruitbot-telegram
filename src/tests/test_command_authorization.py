@@ -1,5 +1,4 @@
 from unittest.mock import Mock, patch
-import pytest
 import os
 from commands.command import Command
 from modules.singleton import Singleton
@@ -17,10 +16,10 @@ def teardown_function():
 def test_command_authorization_open_access():
     with patch.dict(os.environ, {'TELEGRAM_TOKEN': 'test_token'}):
         command = Command()
-        
+
         # when no allowed_user_ids are configured, all users should be authorized
         assert command._is_user_authorized(123)
-        assert command._is_user_authorized(456) 
+        assert command._is_user_authorized(456)
         assert command._is_user_authorized(999)
 
 
@@ -30,12 +29,12 @@ def test_command_authorization_restricted_access():
         'ALLOWED_USER_IDS': '123,456,789'
     }):
         command = Command()
-        
+
         # only allowed users should be authorized
         assert command._is_user_authorized(123)
         assert command._is_user_authorized(456)
         assert command._is_user_authorized(789)
-        
+
         # unauthorized users should be rejected
         assert not command._is_user_authorized(999)
         assert not command._is_user_authorized(111)
@@ -45,7 +44,7 @@ def test_command_process_authorized_user():
     with patch.dict(os.environ, {'TELEGRAM_TOKEN': 'test_token'}):
         command = Command()
         command._command = "test"
-        
+
         # create mock update and context
         update = Mock()
         update.message.from_user.id = 123
@@ -53,12 +52,13 @@ def test_command_process_authorized_user():
         update.message.from_user.full_name = "Test User"
         update.message.text = "/test"
         update.message.chat.id = 456
-        
+        update.message.chat.type = "private"
+
         context = Mock()
-        
+
         # process the command
-        result = command._process(update, context)
-        
+        command._process(update, context)
+
         # should send processing message
         context.bot.send_message.assert_called_once()
         call_args = context.bot.send_message.call_args
@@ -73,7 +73,7 @@ def test_command_process_unauthorized_user():
     }):
         command = Command()
         command._command = "test"
-        
+
         # create mock update for unauthorized user
         update = Mock()
         update.message.from_user.id = 999  # not in allowed list
@@ -81,12 +81,13 @@ def test_command_process_unauthorized_user():
         update.message.from_user.full_name = "Unauthorized User"
         update.message.text = "/test"
         update.message.chat.id = 456
-        
+        update.message.chat.type = "private"
+
         context = Mock()
-        
+
         # process the command
-        result = command._process(update, context)
-        
+        command._process(update, context)
+
         # should send unauthorized message
         context.bot.send_message.assert_called_once()
         call_args = context.bot.send_message.call_args
@@ -101,7 +102,7 @@ def test_command_process_authorized_user_with_restrictions():
     }):
         command = Command()
         command._command = "test"
-        
+
         # create mock update for authorized user
         update = Mock()
         update.message.from_user.id = 123  # in allowed list
@@ -109,14 +110,42 @@ def test_command_process_authorized_user_with_restrictions():
         update.message.from_user.full_name = "Authorized User"
         update.message.text = "/test"
         update.message.chat.id = 456
-        
+        update.message.chat.type = "private"
+
         context = Mock()
-        
+
         # process the command
-        result = command._process(update, context)
-        
+        command._process(update, context)
+
         # should send processing message
         context.bot.send_message.assert_called_once()
         call_args = context.bot.send_message.call_args
         assert call_args[1]['chat_id'] == 456
         assert "Processando comando..." in call_args[1]['text']
+
+
+def test_chat_based_authorization_private_chat():
+    with patch.dict(os.environ, {
+        'TELEGRAM_TOKEN': 'test_token',
+        'ALLOWED_USER_IDS': '123,456'
+    }):
+        command = Command()
+
+        # authorized user in private chat
+        assert command._is_user_authorized(123, 'private', -1)
+        # unauthorized user in private chat
+        assert not command._is_user_authorized(999, 'private', -1)
+
+
+def test_chat_based_authorization_group_chat():
+    with patch.dict(os.environ, {
+        'TELEGRAM_TOKEN': 'test_token',
+        'ALLOWED_USER_IDS': '123,456',
+        'SUMMARY_GROUP_IDS': '-1001111,-1002222'
+    }):
+        command = Command()
+
+        # any user in allowed group
+        assert command._is_user_authorized(999, 'group', -1001111)
+        # any user in disallowed group
+        assert not command._is_user_authorized(999, 'group', -1003333)

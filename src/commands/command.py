@@ -15,35 +15,29 @@ class Command(metaclass=Singleton):
         self._env = Environment()
 
     def _is_user_authorized(self, user_id, chat_type=None, chat_id=None):
-        # if chat_type is not provided, use the original user-based authorization for backward compatibility
+        # backward compatibility: no chat_type provided
         if chat_type is None:
-            # original behavior: if no allowed user IDs are configured, allow all users
             if not self._env.allowed_user_ids:
                 return True
             return user_id in self._env.allowed_user_ids
-        
-        # for private messages, check user authorization
+
+        # private messages: check user authorization
         if chat_type == 'private':
-            # if no allowed user IDs are configured, allow all users in private
             if not self._env.allowed_user_ids:
                 return True
             return user_id in self._env.allowed_user_ids
-        
-        # for group messages, check if group is in summary groups (allowed groups)
+
+        # group messages: allow any user in allowed groups
         if chat_type in ['group', 'supergroup']:
-            # if no allowed user IDs are configured, allow all users in all groups
             if not self._env.allowed_user_ids:
                 return True
-            # if user restrictions exist, check if group is in allowed summary groups
-            # check if SUMMARY_GROUP_IDS was explicitly set by the user
             import os
             explicit_summary_groups = os.getenv('SUMMARY_GROUP_IDS')
-            if not explicit_summary_groups:  # not explicitly configured, allow all groups
+            if not explicit_summary_groups:
                 return True
-            # if explicitly configured, only allow specified groups
             return chat_id in self._env.summary_group_ids
-        
-        # for other unknown chat types, default to user-based authorization
+
+        # default to user-based authorization
         if not self._env.allowed_user_ids:
             return True
         return user_id in self._env.allowed_user_ids
@@ -57,8 +51,8 @@ class Command(metaclass=Singleton):
         chat_type = update.message.chat.type
         if not display_name:
             display_name = update.message.from_user.full_name
-            
-        # check authorization first - pass chat context for proper authorization
+
+        # check authorization
         if not self._is_user_authorized(userid, chat_type, chat_id):
             logging.warning(
                 f"Unauthorized access attempt - "
@@ -72,7 +66,7 @@ class Command(metaclass=Singleton):
                 text="🚫 Você não tem permissão para usar este comando.",
                 parse_mode=ParseMode.HTML,
             )
-            
+
         logging.info(
             f"command: {self._command} - "
             f"user: ({userid}) {display_name} - "
