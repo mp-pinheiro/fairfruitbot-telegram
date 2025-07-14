@@ -32,16 +32,20 @@ class GroupSummary(metaclass=Singleton):
 
     def _store_message(self, message):
         if message.chat_id in self._target_group_ids and message.text:
-            # store relevant message info
-            user_name = (
-                message.from_user.username or message.from_user.first_name or "Usuário"
-            )
-            message_data = {
-                "user": user_name,
-                "text": message.text,
-                "timestamp": message.date,
-            }
-            self._message_buffer.append(message_data)
+            try:
+                user_name = (
+                    message.from_user.username or message.from_user.first_name or "Usuário"
+                )
+                message_data = {
+                    "user": user_name,
+                    "text": message.text,
+                    "timestamp": message.date,
+                }
+                self._message_buffer.append(message_data)
+            except Exception as e:
+                logging.error(f"Failed to store message: {e}")
+                # re-raise to let caller know storage failed
+                raise
 
     def _get_recent_messages(self, limit=100):
         try:
@@ -106,14 +110,21 @@ class GroupSummary(metaclass=Singleton):
         chat_id = message.chat_id
         message_text = message.text
 
-        # always store messages from the target group for later summarization
-        self._store_message(message)
+        # log the message for debugging - do this first to ensure logging happens
+        try:
+            user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
+            logging.info(
+                f"GroupSummary - chat: {chat_id} - user: {user_info} - text: {message_text}"
+            )
+        except Exception:
+            logging.info(f"GroupSummary - chat: {chat_id} - text: {message_text}")
 
-        # log the message for debugging
-        user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
-        logging.info(
-            f"GroupSummary - chat: {chat_id} - user: {user_info} - text: {message_text}"
-        )
+        # always store messages from the target group for later summarization
+        try:
+            self._store_message(message)
+        except Exception as e:
+            logging.error(f"GroupSummary processing stopped due to storage failure: {e}")
+            return
 
         # check if this message should trigger the summary
         if not self._should_trigger(message_text, chat_id):
