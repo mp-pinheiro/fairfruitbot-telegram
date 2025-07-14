@@ -360,3 +360,134 @@ def test_get_recent_messages_filters_triggers(mock_openai_client):
     assert "user3: message 3" in messages
     assert "6 falam mesmo!" not in "\n".join(messages)
     assert "vcs falam agora" not in "\n".join(messages)
+
+
+@patch.dict(os.environ, {"TELEGRAM_TOKEN": "test_token"})
+@patch("commands.group_summary.OpenAIClient")
+def test_message_logging_is_robust(mock_openai_client):
+    """Test that message logging happens even when other operations fail"""
+    mock_openai_client.return_value = Mock()
+    summary = GroupSummary()
+
+    # Mock logging to capture log calls
+    with patch('commands.group_summary.logging') as mock_logging:
+        # Create a message that would normally fail in _store_message
+        message = Mock()
+        message.chat_id = -1001467780714  # valid group
+        message.text = "Test message"
+        message.from_user = None  # This should cause issues in old implementation
+        message.date = "2024-01-01"
+
+        # Create update and context
+        update = Mock()
+        update.message = message
+        context = Mock()
+
+        # Process the message
+        summary._process(update, context)
+
+        # Verify that logging.info was called despite the potential error in user info extraction
+        mock_logging.info.assert_called()
+        
+        # Check that the log message contains expected information
+        log_call_args = mock_logging.info.call_args_list
+        found_group_summary_log = False
+        for call_args in log_call_args:
+            if 'GroupSummary' in str(call_args[0][0]):
+                found_group_summary_log = True
+                assert '-1001467780714' in str(call_args[0][0])  # chat_id
+                assert 'Test message' in str(call_args[0][0])  # message text
+                break
+        
+        assert found_group_summary_log, "Expected GroupSummary log message not found"
+
+
+@patch.dict(os.environ, {"TELEGRAM_TOKEN": "test_token"})
+@patch("commands.group_summary.OpenAIClient")
+def test_logging_with_malformed_message(mock_openai_client):
+    """Test that logging works even with completely malformed message objects"""
+    mock_openai_client.return_value = Mock()
+    summary = GroupSummary()
+
+    with patch('commands.group_summary.logging') as mock_logging:
+        # Create update with minimal message
+        update = Mock()
+        update.message = Mock()
+        update.message.text = "Test message"
+        update.message.chat_id = -1001467780714
+        update.message.from_user = Mock()
+        # Simulate exception when accessing user properties
+        update.message.from_user.id = 123
+        update.message.from_user.username = None
+        update.message.from_user.full_name = None
+
+        context = Mock()
+
+        # Process the message
+        summary._process(update, context)
+
+        # Verify that some form of logging happened
+        assert mock_logging.info.called or mock_logging.error.called
+        
+        # Should have logged the message despite user info issues
+        log_calls = mock_logging.info.call_args_list + mock_logging.error.call_args_list
+        found_message_log = any('Test message' in str(call) for call in log_calls)
+        assert found_message_log, "Message text should be logged even with user info issues"
+
+
+@patch.dict(os.environ, {"TELEGRAM_TOKEN": "test_token"})  
+@patch("commands.group_summary.OpenAIClient")
+def test_store_message_robustness(mock_openai_client):
+    """Test that _store_message doesn't crash with malformed messages"""
+    mock_openai_client.return_value = Mock()
+    summary = GroupSummary()
+    summary._message_buffer.clear()
+
+    # Test with completely invalid message
+    summary._store_message(None)
+    assert len(summary._message_buffer) == 0
+
+    # Test with message missing required attributes
+    bad_message = Mock()
+    # Don't set chat_id - should not crash
+    summary._store_message(bad_message)
+    assert len(summary._message_buffer) == 0
+
+    # Test with message from non-target group
+    bad_message.chat_id = -999999999  # wrong group
+    bad_message.text = "test"
+    summary._store_message(bad_message)
+    assert len(summary._message_buffer) == 0
+
+    # Test with valid message from target group but no user info
+    good_message = Mock()
+    good_message.chat_id = -1001467780714
+    good_message.text = "Valid message"
+    good_message.from_user = None  # No user info
+    good_message.date = "2024-01-01"
+    
+    summary._store_message(good_message)
+    # Should store the message even without user info
+    assert len(summary._message_buffer) == 1
+    assert summary._message_buffer[0]["text"] == "Valid message"
+    assert summary._message_buffer[0]["user"] == "Unknown"
+
+
+@patch.dict(os.environ, {"TELEGRAM_TOKEN": "test_token"})
+@patch("commands.group_summary.OpenAIClient")
+def test_should_trigger_robustness(mock_openai_client):
+    """Test that _should_trigger doesn't crash with invalid inputs"""
+    mock_openai_client.return_value = Mock()
+    summary = GroupSummary()
+
+    # Test with None message
+    assert not summary._should_trigger(None, -1001467780714)
+    
+    # Test with empty message
+    assert not summary._should_trigger("", -1001467780714)
+    
+    # Test with valid trigger in wrong group
+    assert not summary._should_trigger("6 falam", -999999999)
+    
+    # Test with valid trigger in correct group
+    assert summary._should_trigger("6 falam", -1001467780714)
