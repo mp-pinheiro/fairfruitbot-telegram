@@ -15,6 +15,13 @@ class Command(metaclass=Singleton):
         self._env = Environment()
 
     def _is_user_authorized(self, user_id, chat_type=None, chat_id=None):
+        # if chat_type is not provided, use the original user-based authorization for backward compatibility
+        if chat_type is None:
+            # original behavior: if no allowed user IDs are configured, allow all users
+            if not self._env.allowed_user_ids:
+                return True
+            return user_id in self._env.allowed_user_ids
+        
         # for private messages, check user authorization
         if chat_type == 'private':
             # if no allowed user IDs are configured, allow all users in private
@@ -36,7 +43,7 @@ class Command(metaclass=Singleton):
             # if explicitly configured, only allow specified groups
             return chat_id in self._env.summary_group_ids
         
-        # for unknown chat types, default to user-based authorization
+        # for other unknown chat types, default to user-based authorization
         if not self._env.allowed_user_ids:
             return True
         return user_id in self._env.allowed_user_ids
