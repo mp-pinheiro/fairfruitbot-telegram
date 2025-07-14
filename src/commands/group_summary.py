@@ -14,8 +14,8 @@ class GroupSummary(metaclass=Singleton):
         self._target_group_ids = self._env.summary_group_ids
         self._trigger_patterns = ["6 falam", "vcs falam", "ces falam", "6️⃣"]
         self._openai_client = OpenAIClient()
-        # use a more conservative buffer size for better memory management
-        self._message_buffer = deque(maxlen=50)
+        # store recent messages from the target groups
+        self._message_buffer = deque(maxlen=100)
 
     def _should_trigger(self, message_text, chat_id):
         # check if it's one of the target groups
