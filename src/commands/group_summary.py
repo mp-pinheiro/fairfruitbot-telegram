@@ -12,12 +12,7 @@ class GroupSummary(metaclass=Singleton):
     def __init__(self):
         self._env = Environment()
         self._target_group_ids = self._env.summary_group_ids
-        self._trigger_patterns = [
-            "6 falam",
-            "vcs falam",
-            "ces falam",
-            "6️⃣"
-        ]
+        self._trigger_patterns = ["6 falam", "vcs falam", "ces falam", "6️⃣"]
         self._openai_client = OpenAIClient()
         # store recent messages from the target groups
         self._message_buffer = deque(maxlen=100)
@@ -38,11 +33,13 @@ class GroupSummary(metaclass=Singleton):
     def _store_message(self, message):
         if message.chat_id in self._target_group_ids and message.text:
             # store relevant message info
-            user_name = message.from_user.username or message.from_user.first_name or "Usuário"
+            user_name = (
+                message.from_user.username or message.from_user.first_name or "Usuário"
+            )
             message_data = {
                 "user": user_name,
                 "text": message.text,
-                "timestamp": message.date
+                "timestamp": message.date,
             }
             self._message_buffer.append(message_data)
 
@@ -54,8 +51,16 @@ class GroupSummary(metaclass=Singleton):
             # convert stored messages to text format for summarization
             messages = []
             for msg_data in list(self._message_buffer)[-limit:]:
-                formatted_msg = f"{msg_data['user']}: {msg_data['text']}"
-                messages.append(formatted_msg)
+                # filter out messages that contain trigger patterns
+                message_text = msg_data["text"].lower()
+                contains_trigger = any(
+                    pattern.lower() in message_text
+                    for pattern in self._trigger_patterns
+                )
+
+                if not contains_trigger:
+                    formatted_msg = f"{msg_data['user']}: {msg_data['text']}"
+                    messages.append(formatted_msg)
 
             return messages
 
@@ -72,19 +77,19 @@ class GroupSummary(metaclass=Singleton):
                 "Você é um assistente que resume conversas em português brasileiro. "
                 "Crie um resumo conciso e natural do que foi discutido, "
                 "focando nos principais tópicos e pontos importantes. "
-                "Mantenha o resumo breve e informativo."
+                "Mantenha o resumo breve e informativo. "
+                "NÃO comece o resumo com 'Resumo da conversa' ou similar."
             )
 
             user_prompt = f"Resuma esta conversa em português:\n\n{messages_text}"
 
             openai_messages = [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ]
 
             summary = self._openai_client.make_request(
-                messages=openai_messages,
-                max_tokens=300
+                messages=openai_messages, max_tokens=300
             )
 
             return summary.strip() if summary else "Não foi possível gerar um resumo."
@@ -106,7 +111,9 @@ class GroupSummary(metaclass=Singleton):
 
         # log the message for debugging
         user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
-        logging.info(f"GroupSummary - chat: {chat_id} - user: {user_info} - text: {message_text}")
+        logging.info(
+            f"GroupSummary - chat: {chat_id} - user: {user_info} - text: {message_text}"
+        )
 
         # check if this message should trigger the summary
         if not self._should_trigger(message_text, chat_id):
@@ -121,7 +128,7 @@ class GroupSummary(metaclass=Singleton):
                 context.bot.send_message(
                     chat_id=chat_id,
                     text="6️⃣ falam eim! Mas ainda não tenho mensagens suficientes para resumir.",
-                    parse_mode=ParseMode.HTML
+                    parse_mode=ParseMode.HTML,
                 )
                 return
 
@@ -129,12 +136,12 @@ class GroupSummary(metaclass=Singleton):
             summary = self._summarize_messages(recent_messages)
 
             # send response
-            response_text = f"6️⃣ falam eim! Foi falado: {summary}"
+            response_text = (
+                f"6️⃣ falam eim!\n\n{summary}\n\nResumo gerado por Bidu-GPT."
+            )
 
             context.bot.send_message(
-                chat_id=chat_id,
-                text=response_text,
-                parse_mode=ParseMode.HTML
+                chat_id=chat_id, text=response_text, parse_mode=ParseMode.HTML
             )
 
         except Exception as e:
@@ -143,12 +150,9 @@ class GroupSummary(metaclass=Singleton):
             context.bot.send_message(
                 chat_id=chat_id,
                 text="Ops! Não consegui processar o resumo agora.",
-                parse_mode=ParseMode.HTML
+                parse_mode=ParseMode.HTML,
             )
 
     def setup(self, dispatcher):
-        message_handler = MessageHandler(
-            Filters.text & Filters.group,
-            self._process
-        )
+        message_handler = MessageHandler(Filters.text & Filters.group, self._process)
         dispatcher.add_handler(message_handler)
