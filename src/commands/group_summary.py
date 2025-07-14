@@ -19,16 +19,15 @@ class GroupSummary(metaclass=Singleton):
             "6️⃣"
         ]
         self._openai_client = OpenAIClient()
-        # Store recent messages from the target groups
+        # store recent messages from the target groups
         self._message_buffer = deque(maxlen=100)
 
     def _should_trigger(self, message_text, chat_id):
-        """Check if message should trigger the summary feature."""
-        # Check if it's one of the target groups
+        # check if it's one of the target groups
         if chat_id not in self._target_group_ids:
             return False
 
-        # Check if message contains any trigger patterns
+        # check if message contains any trigger patterns
         message_lower = message_text.lower()
         for pattern in self._trigger_patterns:
             if pattern.lower() in message_lower:
@@ -37,9 +36,8 @@ class GroupSummary(metaclass=Singleton):
         return False
 
     def _store_message(self, message):
-        """Store a message in the buffer for later summarization."""
         if message.chat_id in self._target_group_ids and message.text:
-            # Store relevant message info
+            # store relevant message info
             user_name = message.from_user.username or message.from_user.first_name or "Usuário"
             message_data = {
                 "user": user_name,
@@ -49,12 +47,11 @@ class GroupSummary(metaclass=Singleton):
             self._message_buffer.append(message_data)
 
     def _get_recent_messages(self, limit=100):
-        """Get the last N messages from the buffer."""
         try:
             if not self._message_buffer:
                 return ["[Nenhuma mensagem recente disponível]"]
 
-            # Convert stored messages to text format for summarization
+            # convert stored messages to text format for summarization
             messages = []
             for msg_data in list(self._message_buffer)[-limit:]:
                 formatted_msg = f"{msg_data['user']}: {msg_data['text']}"
@@ -67,9 +64,8 @@ class GroupSummary(metaclass=Singleton):
             return ["[Erro ao recuperar mensagens]"]
 
     def _summarize_messages(self, messages):
-        """Use OpenAI to summarize the messages in Portuguese."""
         try:
-            # Prepare the conversation context for OpenAI
+            # prepare the conversation context for OpenAI
             messages_text = "\n".join(messages)
 
             system_prompt = (
@@ -98,7 +94,6 @@ class GroupSummary(metaclass=Singleton):
             return "Erro ao processar o resumo."
 
     def _process(self, update, context):
-        """Process incoming messages and trigger summary if needed."""
         message = update.message
         if not message or not message.text:
             return
@@ -106,22 +101,22 @@ class GroupSummary(metaclass=Singleton):
         chat_id = message.chat_id
         message_text = message.text
 
-        # Always store messages from the target group for later summarization
+        # always store messages from the target group for later summarization
         self._store_message(message)
 
-        # Log the message for debugging
+        # log the message for debugging
         user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
         logging.info(f"GroupSummary - chat: {chat_id} - user: {user_info} - text: {message_text}")
 
-        # Check if this message should trigger the summary
+        # check if this message should trigger the summary
         if not self._should_trigger(message_text, chat_id):
             return
 
         try:
-            # Get recent messages from our buffer
+            # get recent messages from our buffer
             recent_messages = self._get_recent_messages()
 
-            # Skip if we don't have enough messages
+            # skip if we don't have enough messages
             if len(recent_messages) < 5:
                 context.bot.send_message(
                     chat_id=chat_id,
@@ -130,10 +125,10 @@ class GroupSummary(metaclass=Singleton):
                 )
                 return
 
-            # Generate summary
+            # generate summary
             summary = self._summarize_messages(recent_messages)
 
-            # Send response
+            # send response
             response_text = f"6️⃣ falam eim! Foi falado: {summary}"
 
             context.bot.send_message(
@@ -144,7 +139,7 @@ class GroupSummary(metaclass=Singleton):
 
         except Exception as e:
             logging.error(f"Error in GroupSummary._process: {e}")
-            # Send error message
+            # send error message
             context.bot.send_message(
                 chat_id=chat_id,
                 text="Ops! Não consegui processar o resumo agora.",
@@ -152,7 +147,6 @@ class GroupSummary(metaclass=Singleton):
             )
 
     def setup(self, dispatcher):
-        """Setup the message handler."""
         message_handler = MessageHandler(
             Filters.text & Filters.group,
             self._process

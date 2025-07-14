@@ -6,22 +6,20 @@ from modules.singleton import Singleton
 
 
 def teardown_function():
-    """Clear singleton instances after each test."""
+    # clear singleton instances after each test
     if Environment in Singleton._instances:
         del Singleton._instances[Environment]
 
 
 def test_environment_basic_initialization():
-    """Test basic environment initialization with only required token."""
     with patch.dict(os.environ, {'TELEGRAM_TOKEN': 'test_token'}):
         env = Environment()
         assert env.telegram_token == 'test_token'
-        assert env.allowed_user_ids == []  # No user restrictions
-        assert env.summary_group_ids == [-1001467780714]  # Default group
+        assert env.allowed_user_ids == []  # no user restrictions
+        assert env.summary_group_ids == [-1001467780714]  # default group
 
 
 def test_environment_with_allowed_users():
-    """Test environment with allowed user IDs."""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'ALLOWED_USER_IDS': '123,456,789'
@@ -29,23 +27,21 @@ def test_environment_with_allowed_users():
         env = Environment()
         assert env.telegram_token == 'test_token'
         assert env.allowed_user_ids == [123, 456, 789]
-        assert env.summary_group_ids == [-1001467780714]  # Default group
+        assert env.summary_group_ids == [-1001467780714]  # default group
 
 
 def test_environment_with_summary_groups():
-    """Test environment with custom summary group IDs."""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'SUMMARY_GROUP_IDS': '-111,-222,-333'
     }):
         env = Environment()
         assert env.telegram_token == 'test_token'
-        assert env.allowed_user_ids == []  # No user restrictions
+        assert env.allowed_user_ids == []  # no user restrictions
         assert env.summary_group_ids == [-111, -222, -333]
 
 
 def test_environment_with_whitespace():
-    """Test environment parsing with whitespace in ID lists."""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'ALLOWED_USER_IDS': '123, 456 , 789 ',
@@ -57,7 +53,6 @@ def test_environment_with_whitespace():
 
 
 def test_environment_with_empty_lists():
-    """Test environment with empty ID lists."""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'ALLOWED_USER_IDS': '',
@@ -69,18 +64,17 @@ def test_environment_with_empty_lists():
 
 
 def test_environment_with_invalid_user_ids():
-    """Test environment with invalid user IDs."""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'ALLOWED_USER_IDS': 'invalid,456,not_a_number'
     }):
         env = Environment()
-        # Invalid IDs should result in empty list due to error handling
+        # invalid IDs should result in empty list due to error handling
         assert env.allowed_user_ids == []
 
 
 def test_environment_missing_token():
-    """Test that missing TELEGRAM_TOKEN causes system exit."""
+    # test that missing TELEGRAM_TOKEN causes system exit
     with patch.dict(os.environ, {}, clear=True):
         with pytest.raises(SystemExit):
             Environment()

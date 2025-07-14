@@ -2,6 +2,29 @@
 
 Horoscope predictions, tarot and disgusting Persona weebery.
 
+## Configuration
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```bash
+# Required
+TELEGRAM_TOKEN=your_telegram_bot_token
+
+# Optional: restrict bot access to specific users (comma-separated user IDs)
+ALLOWED_USER_IDS=123456789,987654321
+
+# Optional: summary feature groups (comma-separated group IDs, defaults to -1001467780714)
+SUMMARY_GROUP_IDS=-1001467780714,-1001234567890
+```
+
+### Features
+
+- **User Authorization**: Control who can use bot commands via `ALLOWED_USER_IDS`
+- **Multiple Group Support**: Summary feature works in multiple groups via `SUMMARY_GROUP_IDS`
+- Bot logs user and group IDs for easy configuration
+
 # God Damn Raspberry Pi
 
 Setting up for it is a pain, so here's the only fucking way I got it to work.
