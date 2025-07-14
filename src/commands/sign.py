@@ -27,6 +27,7 @@ class Sign(Command):
     DEFAULT_SIGN = "aries"
 
     def __init__(self):
+        super().__init__()
         self._command = "bidu_old"
         self._fetcher = SignFetcher()
 

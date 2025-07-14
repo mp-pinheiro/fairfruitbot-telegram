@@ -7,6 +7,7 @@ from modules import PredictionModule
 class SignGPT(Sign):
     # TODO: maybe decouple this class from the Sign class
     def __init__(self):
+        super().__init__()
         self._command = "bidu"
         self._prediction_module = PredictionModule()
 

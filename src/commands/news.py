@@ -9,6 +9,7 @@ from commands import Command
 class News(Command):
 
     def __init__(self):
+        super().__init__()
         self._command = "news"
         self._fetcher = NewsFetcher()
 
