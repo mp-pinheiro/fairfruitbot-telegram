@@ -2,6 +2,28 @@ import difflib
 from datetime import datetime
 
 
+def create_message_data(message):
+    """
+    Create standardized message data structure for handlers that need to store messages.
+    """
+    try:
+        user_name = (
+            message.from_user.username
+            or message.from_user.first_name
+            or "Usuário"
+        )
+        return {
+            "user": user_name,
+            "user_id": message.from_user.id,
+            "text": message.text,
+            "timestamp": message.date,
+            "message_id": message.message_id,
+            "chat_id": message.chat_id,
+        }
+    except Exception as e:
+        raise Exception(f"Failed to create message data: {e}")
+
+
 def force_format_timestamp(date):
     """
     Force format a timestamp to a date object.

@@ -4,7 +4,7 @@ import traceback
 
 from telegram.ext import Updater
 
-from commands import Sign, Tarot, SignGPT, TarotGPT, GroupSummary
+from commands import Sign, Tarot, SignGPT, TarotGPT, GroupSummary, TypoDetector
 from environment import Environment
 
 # load env
@@ -14,7 +14,7 @@ env = Environment()
 commands = [Sign(), Tarot(), SignGPT(), TarotGPT()]
 
 # load message handlers (non-command handlers)
-message_handlers = [GroupSummary()]
+message_handlers = [GroupSummary(), TypoDetector()]
 
 # fetch updater and job queue
 logging.info("Starting bot...")

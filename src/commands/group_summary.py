@@ -6,6 +6,7 @@ from telegram.ext import MessageHandler, Filters
 from clients import OpenAIClient
 from modules import Singleton
 from environment import Environment
+from utils import create_message_data
 
 
 class GroupSummary(metaclass=Singleton):
@@ -33,15 +34,14 @@ class GroupSummary(metaclass=Singleton):
     def _store_message(self, message):
         if message.chat_id in self._target_group_ids and message.text:
             try:
-                user_name = (
-                    message.from_user.username or message.from_user.first_name or "Usuário"
-                )
-                message_data = {
-                    "user": user_name,
-                    "text": message.text,
-                    "timestamp": message.date,
+                message_data = create_message_data(message)
+                # GroupSummary only needs user, text, and timestamp
+                simplified_data = {
+                    "user": message_data["user"],
+                    "text": message_data["text"],
+                    "timestamp": message_data["timestamp"],
                 }
-                self._message_buffer.append(message_data)
+                self._message_buffer.append(simplified_data)
             except Exception as e:
                 logging.error(f"Failed to store message: {e}")
                 # re-raise to let caller know storage failed
