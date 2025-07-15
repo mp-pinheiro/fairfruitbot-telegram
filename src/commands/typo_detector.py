@@ -18,8 +18,8 @@ class TypoDetector(metaclass=Singleton):
         self._message_buffer = deque(maxlen=50)
         # load Portuguese words for filtering
         self._portuguese_words = self._load_portuguese_words()
-        # minimum repetitions to consider it a typo pattern
-        self._min_repetitions = 1
+        # minimum different users required to trigger (changed to 3 for more specificity)
+        self._min_users = 3
 
     def _load_portuguese_words(self):
         """Load Portuguese words from the word list file"""
@@ -60,14 +60,19 @@ class TypoDetector(metaclass=Singleton):
         if len(text) <= 20:
             words = text.split()
             if len(words) <= 2:
-                if self._is_potential_typo_word(text):
-                    potential_typos.add(text)
+                # Clean the entire text for potential typo check
+                cleaned_text = re.sub(r'^[^\w]+|[^\w]+$', '', text)
+                if self._is_potential_typo_word(cleaned_text):
+                    potential_typos.add(cleaned_text)
 
         # also check individual words in longer messages
         words = text.split()
         for word in words:
             if self._is_potential_typo_word(word):
-                potential_typos.add(word)
+                # Add the cleaned version of the word (punctuation removed)
+                cleaned_word = re.sub(r'^[^\w]+|[^\w]+$', '', word.strip().lower())
+                if cleaned_word:
+                    potential_typos.add(cleaned_word)
 
         return list(potential_typos)
 
@@ -75,8 +80,10 @@ class TypoDetector(metaclass=Singleton):
         """
         Determine if a single word could be a typo.
         """
-        # clean word
+        # clean word and remove punctuation
         word = word.strip().lower()
+        # Remove common punctuation from the end/beginning of words
+        word = re.sub(r'^[^\w]+|[^\w]+$', '', word)
 
         # ignore empty words
         if not word:
@@ -122,10 +129,6 @@ class TypoDetector(metaclass=Singleton):
         if re.match(r"^[^\w\s]+$", word):
             return False
 
-        # ignore words with punctuation (likely not typos)
-        if re.search(r"[.!?:;,]", word):
-            return False
-
         return True
 
     def _store_message(self, message):
@@ -142,6 +145,10 @@ class TypoDetector(metaclass=Singleton):
         """
         Detect if the current message contains a typo that's part of a repetition pattern
         Returns the original message if pattern detected, None otherwise
+        
+        New pattern: requires 3 different users with specific conditions:
+        - At least one occurrence as part of a longer message (original context)
+        - At least one occurrence as the full message (≤ 2 words)
         """
         # extract potential typos from current message
         current_typos = self._extract_potential_typos(current_message.text)
@@ -154,8 +161,10 @@ class TypoDetector(metaclass=Singleton):
             # look for this typo in recent messages (including current)
             original_msg = None
             different_users = set()
+            has_part_of_message = False  # typo as part of longer message
+            has_full_message = False     # typo as the full message
 
-            # search through recent messages in chronological order to find the original
+            # search through recent messages in chronological order
             for msg_data in list(self._message_buffer):
                 msg_typos = self._extract_potential_typos(msg_data["text"])
                 
@@ -165,12 +174,29 @@ class TypoDetector(metaclass=Singleton):
                     # store the earliest occurrence as original
                     if original_msg is None:
                         original_msg = msg_data
+                    
+                    # check message context
+                    words = msg_data["text"].strip().split()
+                    if len(words) <= 2:
+                        has_full_message = True
+                    else:
+                        has_part_of_message = True
 
-            # also count the current message
+            # also check the current message
             different_users.add(current_message.from_user.id)
+            current_words = current_message.text.strip().split()
+            if len(current_words) <= 2:
+                has_full_message = True
+            else:
+                has_part_of_message = True
 
-            # pattern detected if the same word appears by 2 different users
-            if len(different_users) >= 2:
+            # pattern detected if:
+            # 1. Same word appears by 3 different users
+            # 2. At least one occurrence is part of a longer message
+            # 3. At least one occurrence is the full message
+            if (len(different_users) >= 3 and 
+                has_part_of_message and 
+                has_full_message):
                 return original_msg
 
         return None

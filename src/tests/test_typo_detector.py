@@ -78,40 +78,39 @@ class TestTypoDetector(unittest.TestCase):
             self.assertEqual(stored_msg["user_id"], 123)
 
     def test_detect_typo_pattern(self):
-        """Test typo pattern detection"""
+        """Test typo pattern detection with new 3-user requirement"""
         with patch.dict(
             os.environ,
             {"TELEGRAM_TOKEN": "test_token", "SUMMARY_GROUP_IDS": "-1001467780714"},
         ):
             detector = TypoDetector()
 
-            # create mock messages for typo pattern
-            messages = []
-
-            # original message with typo
+            # create mock messages for typo pattern following the new pattern
+            
+            # original message with typo as part of longer message
             original_msg = Mock()
             original_msg.chat_id = -1001467780714
-            original_msg.text = "jgoar"
+            original_msg.text = "ola jgoar, isso é um exemplo"  # typo as part of message
             original_msg.from_user.username = "user1"
             original_msg.from_user.first_name = "User1"
             original_msg.from_user.id = 123
             original_msg.date = "2024-01-01T10:00:00"
             original_msg.message_id = 100
 
-            # repeated message by another user
+            # repeated message by another user (full message)
             repeat_msg1 = Mock()
             repeat_msg1.chat_id = -1001467780714
-            repeat_msg1.text = "jgoar"
+            repeat_msg1.text = "jgoar"  # typo as full message
             repeat_msg1.from_user.username = "user2"
             repeat_msg1.from_user.first_name = "User2"
             repeat_msg1.from_user.id = 456
             repeat_msg1.date = "2024-01-01T10:01:00"
             repeat_msg1.message_id = 101
 
-            # repeated message by third user
+            # repeated message by third user (full message)
             repeat_msg2 = Mock()
             repeat_msg2.chat_id = -1001467780714
-            repeat_msg2.text = "jgoar"
+            repeat_msg2.text = "jgoar"  # typo as full message
             repeat_msg2.from_user.username = "user3"
             repeat_msg2.from_user.first_name = "User3"
             repeat_msg2.from_user.id = 789
@@ -131,18 +130,18 @@ class TestTypoDetector(unittest.TestCase):
             self.assertEqual(detected_original["message_id"], 100)
             self.assertEqual(detected_original["user_id"], 123)
 
-    def test_no_pattern_with_same_user(self):
-        """Test that no pattern is detected when same user repeats"""
+    def test_no_pattern_with_only_two_users(self):
+        """Test that no pattern is detected with only 2 users (need 3)"""
         with patch.dict(
             os.environ,
             {"TELEGRAM_TOKEN": "test_token", "SUMMARY_GROUP_IDS": "-1001467780714"},
         ):
             detector = TypoDetector()
 
-            # create messages from same user
+            # create messages from only 2 users
             msg1 = Mock()
             msg1.chat_id = -1001467780714
-            msg1.text = "jgoar"
+            msg1.text = "ola jgoar exemplo"  # typo as part of message
             msg1.from_user.username = "user1"
             msg1.from_user.first_name = "User1"
             msg1.from_user.id = 123
@@ -151,22 +150,22 @@ class TestTypoDetector(unittest.TestCase):
 
             msg2 = Mock()
             msg2.chat_id = -1001467780714
-            msg2.text = "jgoar"
-            msg2.from_user.username = "user1"
-            msg2.from_user.first_name = "User1"
-            msg2.from_user.id = 123  # same user
+            msg2.text = "jgoar"  # typo as full message
+            msg2.from_user.username = "user2"
+            msg2.from_user.first_name = "User2"
+            msg2.from_user.id = 456
             msg2.date = "2024-01-01T10:01:00"
             msg2.message_id = 101
 
             detector._store_message(msg1)
             detector._store_message(msg2)
 
-            # should not detect pattern with same user
+            # should not detect pattern with only 2 users
             detected_original = detector._detect_typo_pattern(msg2)
             self.assertIsNone(detected_original)
 
     def test_process_message_flow(self):
-        """Test the complete message processing flow"""
+        """Test the complete message processing flow with 3-user requirement"""
         with patch.dict(
             os.environ,
             {"TELEGRAM_TOKEN": "test_token", "SUMMARY_GROUP_IDS": "-1001467780714"},
@@ -177,9 +176,9 @@ class TestTypoDetector(unittest.TestCase):
             update = Mock()
             context = Mock()
 
-            # first message - original typo
+            # first message - original typo as part of longer message
             update.message.chat_id = -1001467780714
-            update.message.text = "jgoar"
+            update.message.text = "ola jgoar, isso é um exemplo"
             update.message.from_user.username = "user1"
             update.message.from_user.first_name = "User1"
             update.message.from_user.id = 123
@@ -190,13 +189,23 @@ class TestTypoDetector(unittest.TestCase):
             detector._process(update, context)
             context.bot.send_message.assert_not_called()
 
-            # second message - repeat by different user
+            # second message - repeat by different user as full message
             update.message.text = "jgoar"
             update.message.from_user.username = "user2"
             update.message.from_user.id = 456
             update.message.message_id = 101
 
-            # process second message - should trigger now (need only 1 repetition)
+            # process second message - should not trigger yet (only 2 users)
+            detector._process(update, context)
+            context.bot.send_message.assert_not_called()
+
+            # third message - repeat by third user as full message
+            update.message.text = "jgoar"
+            update.message.from_user.username = "user3"
+            update.message.from_user.id = 789
+            update.message.message_id = 102
+
+            # process third message - should trigger now (3 users, both contexts)
             detector._process(update, context)
 
             # verify bot response was called
@@ -235,8 +244,8 @@ class TestTypoDetector(unittest.TestCase):
             self.assertNotIn("limão", detector._extract_potential_typos("eu lembro da sua massagista perguntando sobre limão pra vc"))
             self.assertNotIn("limão", detector._extract_potential_typos("perguntando se eu gostava de capim limão"))
 
-    def test_new_trigger_logic_2_users(self):
-        """Test the new simplified trigger logic: 2 different users"""
+    def test_new_trigger_logic_3_users(self):
+        """Test the new trigger logic: 3 different users with context requirements"""
         with patch.dict(
             os.environ,
             {"TELEGRAM_TOKEN": "test_token", "SUMMARY_GROUP_IDS": "-1001467780714"},
@@ -247,37 +256,117 @@ class TestTypoDetector(unittest.TestCase):
                 
             detector = TypoDetector()
 
-            # Create mock messages for typo pattern
-            # User1 says "jgoar" (original typo)
+            # Create mock messages following the exact pattern described
+            # User1 says typo as part of longer message
             original_msg = Mock()
             original_msg.chat_id = -1001467780714
-            original_msg.text = "jgoar"
+            original_msg.text = "ola mudno, isso é um exemplo"
             original_msg.from_user.username = "user1"
             original_msg.from_user.first_name = "User1"
             original_msg.from_user.id = 123
             original_msg.date = "2024-01-01T10:00:00"
             original_msg.message_id = 100
 
-            # User2 repeats "jgoar" - should trigger immediately
-            repeat_msg = Mock()
-            repeat_msg.chat_id = -1001467780714
-            repeat_msg.text = "jgoar"
-            repeat_msg.from_user.username = "user2"
-            repeat_msg.from_user.first_name = "User2"
-            repeat_msg.from_user.id = 456
-            repeat_msg.date = "2024-01-01T10:01:00"
-            repeat_msg.message_id = 101
+            # User2 says something else
+            other_msg = Mock()
+            other_msg.chat_id = -1001467780714
+            other_msg.text = "outro exemplo"
+            other_msg.from_user.username = "user2"
+            other_msg.from_user.first_name = "User2"
+            other_msg.from_user.id = 456
+            other_msg.date = "2024-01-01T10:01:00"
+            other_msg.message_id = 101
 
-            # Store the original message
+            # User3 says typo as full message
+            first_repeat_msg = Mock()
+            first_repeat_msg.chat_id = -1001467780714
+            first_repeat_msg.text = "mudno"
+            first_repeat_msg.from_user.username = "user3"
+            first_repeat_msg.from_user.first_name = "User3"
+            first_repeat_msg.from_user.id = 789
+            first_repeat_msg.date = "2024-01-01T10:02:00"
+            first_repeat_msg.message_id = 102
+
+            # User2 says the typo as full message too (need 3 users)
+            user2_repeat_msg = Mock()
+            user2_repeat_msg.chat_id = -1001467780714
+            user2_repeat_msg.text = "mudno"
+            user2_repeat_msg.from_user.username = "user2"
+            user2_repeat_msg.from_user.first_name = "User2"
+            user2_repeat_msg.from_user.id = 456
+            user2_repeat_msg.date = "2024-01-01T10:03:00"
+            user2_repeat_msg.message_id = 103
+
+            # User3 says typo as full message again - SHOULD TRIGGER
+            final_repeat_msg = Mock()
+            final_repeat_msg.chat_id = -1001467780714
+            final_repeat_msg.text = "mudno"
+            final_repeat_msg.from_user.username = "user3"
+            final_repeat_msg.from_user.first_name = "User3"
+            final_repeat_msg.from_user.id = 789
+            final_repeat_msg.date = "2024-01-01T10:04:00"
+            final_repeat_msg.message_id = 104
+
+            # Store all messages
             detector._store_message(original_msg)
+            detector._store_message(other_msg)
+            detector._store_message(first_repeat_msg)
+            detector._store_message(user2_repeat_msg)
 
-            # Test pattern detection - should trigger with just 2 users
-            detected_original = detector._detect_typo_pattern(repeat_msg)
+            # Test pattern detection on the final message
+            detected_original = detector._detect_typo_pattern(final_repeat_msg)
 
             # Should detect pattern and return original message
             self.assertIsNotNone(detected_original)
             self.assertEqual(detected_original["message_id"], 100)
             self.assertEqual(detected_original["user_id"], 123)
+
+    def test_no_pattern_without_context_requirements(self):
+        """Test that no pattern is detected without proper context requirements"""
+        with patch.dict(
+            os.environ,
+            {"TELEGRAM_TOKEN": "test_token", "SUMMARY_GROUP_IDS": "-1001467780714"},
+        ):
+            # Clear singleton instance
+            if hasattr(TypoDetector, "_instances"):
+                TypoDetector._instances.clear()
+                
+            detector = TypoDetector()
+
+            # Case 1: 3 users but all messages are long (no "full message" occurrence)
+            msg1 = Mock()
+            msg1.chat_id = -1001467780714
+            msg1.text = "ola mudno isso é exemplo"  # typo as part of message
+            msg1.from_user.username = "user1"
+            msg1.from_user.first_name = "User1"
+            msg1.from_user.id = 123
+            msg1.date = "2024-01-01T10:00:00"
+            msg1.message_id = 100
+
+            msg2 = Mock()
+            msg2.chat_id = -1001467780714
+            msg2.text = "eu vi mudno também"  # typo as part of message
+            msg2.from_user.username = "user2"
+            msg2.from_user.first_name = "User2"
+            msg2.from_user.id = 456
+            msg2.date = "2024-01-01T10:01:00"
+            msg2.message_id = 101
+
+            msg3 = Mock()
+            msg3.chat_id = -1001467780714
+            msg3.text = "mudno é engraçado mesmo"  # typo as part of message
+            msg3.from_user.username = "user3"
+            msg3.from_user.first_name = "User3"
+            msg3.from_user.id = 789
+            msg3.date = "2024-01-01T10:02:00"
+            msg3.message_id = 102
+
+            detector._store_message(msg1)
+            detector._store_message(msg2)
+
+            # Should not detect pattern - no "full message" occurrence
+            detected_original = detector._detect_typo_pattern(msg3)
+            self.assertIsNone(detected_original)
 
 
 if __name__ == "__main__":
