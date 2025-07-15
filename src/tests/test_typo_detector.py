@@ -20,10 +20,10 @@ class TestTypoDetector(unittest.TestCase):
             detector = TypoDetector()
 
             # these should be considered potential typos
-            self.assertTrue(detector._is_potential_typo("jgoar"))
-            self.assertTrue(detector._is_potential_typo("boca cheia"))
-            self.assertTrue(detector._is_potential_typo("jogar"))
-            self.assertTrue(detector._is_potential_typo("erro"))
+            self.assertIn("jgoar", detector._extract_potential_typos("jgoar"))
+            self.assertIn("jgoar", detector._extract_potential_typos("pra jgoar jogo"))
+            self.assertIn("jogar", detector._extract_potential_typos("jogar"))
+            self.assertIn("erro", detector._extract_potential_typos("erro"))
 
     def test_is_potential_typo_invalid_cases(self):
         """Test that common words and phrases are not considered typos"""
@@ -34,17 +34,17 @@ class TestTypoDetector(unittest.TestCase):
             detector = TypoDetector()
 
             # these should NOT be considered potential typos
-            self.assertFalse(detector._is_potential_typo("sim"))
-            self.assertFalse(detector._is_potential_typo("ok"))
-            self.assertFalse(detector._is_potential_typo("kkkkk"))
-            self.assertFalse(detector._is_potential_typo("123"))
-            self.assertFalse(detector._is_potential_typo(""))
-            self.assertFalse(
-                detector._is_potential_typo(
+            self.assertEqual([], detector._extract_potential_typos("sim"))
+            self.assertEqual([], detector._extract_potential_typos("ok"))
+            self.assertEqual([], detector._extract_potential_typos("kkkkk"))
+            self.assertEqual([], detector._extract_potential_typos("123"))
+            self.assertEqual([], detector._extract_potential_typos(""))
+            self.assertEqual(
+                [], detector._extract_potential_typos(
                     "this is a very long message that should not be considered a typo"
                 )
             )
-            self.assertFalse(detector._is_potential_typo("😂😂😂"))
+            self.assertEqual([], detector._extract_potential_typos("😂😂😂"))
 
     def test_store_message(self):
         """Test message storage functionality"""
@@ -193,17 +193,7 @@ class TestTypoDetector(unittest.TestCase):
             update.message.from_user.id = 456
             update.message.message_id = 101
 
-            # process second message - should not trigger yet (need min 2 repetitions)
-            detector._process(update, context)
-            context.bot.send_message.assert_not_called()
-
-            # third message - another repeat by different user
-            update.message.text = "jgoar"
-            update.message.from_user.username = "user3"
-            update.message.from_user.id = 789
-            update.message.message_id = 102
-
-            # process third message - should trigger now
+            # process second message - should trigger now (need only 1 repetition)
             detector._process(update, context)
 
             # verify bot response was called

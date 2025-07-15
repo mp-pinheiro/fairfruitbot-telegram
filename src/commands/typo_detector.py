@@ -6,6 +6,7 @@ from telegram.ext import MessageHandler, Filters
 
 from modules import Singleton
 from environment import Environment
+from utils import create_message_data
 
 
 class TypoDetector(metaclass=Singleton):
@@ -19,32 +20,55 @@ class TypoDetector(metaclass=Singleton):
         # store the original message for each typo
         self._typo_original = {}
         # minimum repetitions to consider it a typo pattern
-        self._min_repetitions = 2
+        self._min_repetitions = 1
 
-    def _is_potential_typo(self, text):
+    def _extract_potential_typos(self, message_text):
         """
-        Determine if a message could be a typo being repeated.
-        Focus on short words or phrases that are likely typos.
+        Extract potential typos from a message.
+        Returns a list of potential typos found in the message.
         """
+        if not message_text:
+            return []
+
         # clean text
-        text = text.strip().lower()
+        text = message_text.strip().lower()
+        potential_typos = set()  # use set to avoid duplicates
 
-        # ignore empty messages
-        if not text:
-            return False
+        # if the entire message is short, check if it's a potential typo
+        if len(text) <= 20:
+            words = text.split()
+            if len(words) <= 2:
+                if self._is_potential_typo_word(text):
+                    potential_typos.add(text)
 
-        # ignore messages that are too long (likely not just a typo)
-        if len(text) > 20:
-            return False
-
-        # ignore messages with multiple words (unless very short)
+        # also check individual words in longer messages
         words = text.split()
-        if len(words) > 2:
-            return False
-        if len(words) == 2 and len(text) > 15:
+        for word in words:
+            if self._is_potential_typo_word(word):
+                potential_typos.add(word)
+
+        return list(potential_typos)
+
+    def _is_potential_typo_word(self, word):
+        """
+        Determine if a single word could be a typo.
+        """
+        # clean word
+        word = word.strip().lower()
+
+        # ignore empty words
+        if not word:
             return False
 
-        # ignore common short words/phrases that aren't typos
+        # ignore very short words (1-2 chars) unless they look like typos
+        if len(word) <= 2:
+            return False
+
+        # ignore very long words (unlikely to be simple typos)
+        if len(word) > 15:
+            return False
+
+        # ignore common words that aren't typos
         common_words = {
             "sim",
             "não",
@@ -79,21 +103,111 @@ class TypoDetector(metaclass=Singleton):
             "é",
             "ta",
             "tá",
+            "com",
+            "sem",
+            "por",
+            "para",
+            "mais",
+            "menos",
+            "muito",
+            "pouco",
+            "bem",
+            "mal",
+            "foi",
+            "vai",
+            "tem",
+            "ter",
+            "ser",
+            "estar",
+            "fazer",
+            "dar",
+            "ver",
+            # add more common Portuguese words
+            "de",
+            "do",
+            "da",
+            "dos",
+            "das",
+            "em",
+            "no",
+            "na",
+            "nos",
+            "nas",
+            "um",
+            "uma",
+            "uns",
+            "umas",
+            "ou",
+            "se",
+            "me",
+            "te",
+            "lhe",
+            "nos",
+            "vos",
+            "lhes",
+            "meu",
+            "minha",
+            "meus",
+            "minhas",
+            "seu",
+            "sua",
+            "seus",
+            "suas",
+            "nosso",
+            "nossa",
+            "nossos",
+            "nossas",
+            "este",
+            "esta",
+            "estes",
+            "estas",
+            "esse",
+            "essa",
+            "esses",
+            "essas",
+            "aquele",
+            "aquela",
+            "aqueles",
+            "aquelas",
+            "isto",
+            "isso",
+            "aquilo",
+            "boca",
+            "cheia",
+            "meio",
+            "cheio",
+            "toda",
+            "todo",
+            "todos",
+            "todas",
+            "cada",
+            "alguns",
+            "algumas",
+            "nenhum",
+            "nenhuma",
+            "outro",
+            "outra",
+            "outros",
+            "outras",
         }
 
-        if text in common_words:
+        if word in common_words:
             return False
 
         # ignore repeated character patterns like "kkkkk", "hahaha", etc.
-        if len(text) >= 3 and len(set(text)) <= 2:
+        if len(word) >= 3 and len(set(word)) <= 2:
             return False
 
         # ignore pure numbers
-        if text.isdigit():
+        if word.isdigit():
             return False
 
         # ignore pure emoji or symbols
-        if re.match(r"^[^\w\s]+$", text):
+        if re.match(r"^[^\w\s]+$", word):
+            return False
+
+        # ignore words with punctuation (likely not typos)
+        if re.search(r"[.!?:;,]", word):
             return False
 
         return True
@@ -102,19 +216,7 @@ class TypoDetector(metaclass=Singleton):
         """Store message data for typo detection"""
         if message.chat_id in self._target_group_ids and message.text:
             try:
-                user_name = (
-                    message.from_user.username
-                    or message.from_user.first_name
-                    or "Usuário"
-                )
-                message_data = {
-                    "user": user_name,
-                    "user_id": message.from_user.id,
-                    "text": message.text,
-                    "timestamp": message.date,
-                    "message_id": message.message_id,
-                    "chat_id": message.chat_id,
-                }
+                message_data = create_message_data(message)
                 self._message_buffer.append(message_data)
             except Exception as e:
                 logging.error(f"Failed to store message: {e}")
@@ -122,44 +224,46 @@ class TypoDetector(metaclass=Singleton):
 
     def _detect_typo_pattern(self, current_message):
         """
-        Detect if the current message is part of a typo repetition pattern
+        Detect if the current message contains a typo that's part of a repetition pattern
         Returns the original message if pattern detected, None otherwise
         """
-        current_text = current_message.text.strip().lower()
-
-        if not self._is_potential_typo(current_text):
+        # extract potential typos from current message
+        current_typos = self._extract_potential_typos(current_message.text)
+        
+        if not current_typos:
             return None
 
-        # look for this text in recent messages (including current)
-        original_msg = None
-        repetition_count = 0
-        different_users = set()
+        # check each potential typo for repetition patterns
+        for typo in current_typos:
+            # look for this typo in recent messages (including current)
+            original_msg = None
+            repetition_count = 0
+            different_users = set()
 
-        # search through recent messages in chronological order to find the original
-        for msg_data in list(self._message_buffer):
-            msg_text = msg_data["text"].strip().lower()
+            # search through recent messages in chronological order to find the original
+            for msg_data in list(self._message_buffer):
+                msg_typos = self._extract_potential_typos(msg_data["text"])
+                
+                if typo in msg_typos:
+                    repetition_count += 1
+                    different_users.add(msg_data["user_id"])
 
-            if msg_text == current_text:
-                repetition_count += 1
-                different_users.add(msg_data["user_id"])
+                    # store the earliest occurrence as original
+                    if original_msg is None:
+                        original_msg = msg_data
 
-                # store the earliest occurrence as original
-                if original_msg is None:
-                    original_msg = msg_data
-
-        # also count the current message
-        if current_text == current_message.text.strip().lower():
+            # also count the current message
             repetition_count += 1
             different_users.add(current_message.from_user.id)
 
-        # pattern detected if:
-        # 1. At least min_repetitions + 1 occurrences (original + min_repetitions repeats)
-        # 2. At least 2 different users involved
-        if (
-            repetition_count >= (self._min_repetitions + 1)
-            and len(different_users) >= 2
-        ):
-            return original_msg
+            # pattern detected if:
+            # 1. At least min_repetitions + 1 occurrences (original + min_repetitions repeats)
+            # 2. At least 2 different users involved
+            if (
+                repetition_count >= (self._min_repetitions + 1)
+                and len(different_users) >= 2
+            ):
+                return original_msg
 
         return None
 
@@ -169,15 +273,6 @@ class TypoDetector(metaclass=Singleton):
             return
 
         chat_id = message.chat_id
-
-        # log the message for debugging
-        try:
-            user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
-            logging.info(
-                f"TypoDetector - chat: {chat_id} - user: {user_info} - text: {message.text}"
-            )
-        except Exception:
-            logging.info(f"TypoDetector - chat: {chat_id} - text: {message.text}")
 
         # only process messages from target groups
         if chat_id not in self._target_group_ids:
@@ -201,6 +296,7 @@ class TypoDetector(metaclass=Singleton):
                     parse_mode=ParseMode.HTML,
                 )
 
+                # only log when we actually trigger
                 logging.info(
                     f"TypoDetector triggered for typo: '{message.text}' - "
                     f"original by user {original_msg['user']}"
