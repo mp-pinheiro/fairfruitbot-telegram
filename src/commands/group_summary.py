@@ -1,22 +1,21 @@
 import logging
-from collections import deque
 from telegram import ParseMode
 from telegram.ext import MessageHandler, Filters
 
 from clients import OpenAIClient
 from modules import Singleton
 from environment import Environment
-from utils import create_message_data
+from messaging import MessageBuffer
 
 
 class GroupSummary(metaclass=Singleton):
     def __init__(self):
         self._env = Environment()
-        self._target_group_ids = self._env.summary_group_ids
+        self._target_group_ids = set(self._env.summary_group_ids)
         self._trigger_patterns = ["6 falam", "vcs falam", "ces falam", "6️⃣"]
         self._openai_client = OpenAIClient()
-        # store recent messages from the target groups
-        self._message_buffer = deque(maxlen=100)
+        # use shared message buffer instead of own deque
+        self._message_buffer = MessageBuffer(max_size=100)
 
     def _should_trigger(self, message_text, chat_id):
         # check if it's one of the target groups
@@ -32,39 +31,37 @@ class GroupSummary(metaclass=Singleton):
         return False
 
     def _store_message(self, message):
-        if message.chat_id in self._target_group_ids and message.text:
-            try:
-                message_data = create_message_data(message)
-                # GroupSummary only needs user, text, and timestamp
-                simplified_data = {
-                    "user": message_data["user"],
-                    "text": message_data["text"],
-                    "timestamp": message_data["timestamp"],
-                }
-                self._message_buffer.append(simplified_data)
-            except Exception as e:
-                logging.error(f"Failed to store message: {e}")
-                # re-raise to let caller know storage failed
-                raise
+        """Store message data using shared buffer"""
+        try:
+            return self._message_buffer.store_message(message, self._target_group_ids)
+        except Exception as e:
+            logging.error(f"Failed to store message: {e}")
+            # re-raise to let caller know storage failed
+            raise
 
     def _get_recent_messages(self, limit=100):
         try:
-            if not self._message_buffer:
-                return ["[Nenhuma mensagem recente disponível]"]
-
-            # convert stored messages to text format for summarization
-            messages = []
-            for msg_data in list(self._message_buffer)[-limit:]:
-                # filter out messages that contain trigger patterns
+            # Use shared buffer to get recent messages, filtered to exclude trigger patterns
+            def filter_non_triggers(msg_data):
                 message_text = msg_data["text"].lower()
-                contains_trigger = any(
+                return not any(
                     pattern.lower() in message_text
                     for pattern in self._trigger_patterns
                 )
+                
+            filtered_messages = self._message_buffer.get_recent_messages(
+                limit=limit, 
+                filter_func=filter_non_triggers
+            )
+            
+            if not filtered_messages:
+                return ["[Nenhuma mensagem recente disponível]"]
 
-                if not contains_trigger:
-                    formatted_msg = f"{msg_data['user']}: {msg_data['text']}"
-                    messages.append(formatted_msg)
+            # convert to text format for summarization
+            messages = []
+            for msg_data in filtered_messages:
+                formatted_msg = f"{msg_data['user']}: {msg_data['text']}"
+                messages.append(formatted_msg)
 
             return messages
 

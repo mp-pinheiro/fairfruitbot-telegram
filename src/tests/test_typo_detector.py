@@ -2,14 +2,17 @@ import os
 import unittest
 from unittest.mock import Mock, patch
 from commands.typo_detector import TypoDetector
+from messaging.message_buffer import MessageBuffer
 
 
 class TestTypoDetector(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
-        # clear singleton instance
+        # clear singleton instances
         if hasattr(TypoDetector, "_instances"):
             TypoDetector._instances.clear()
+        if hasattr(MessageBuffer, "_instances"):
+            MessageBuffer._instances.clear()
 
     def test_is_potential_typo_valid_cases(self):
         """Test that valid typos are detected"""
@@ -71,8 +74,10 @@ class TestTypoDetector(unittest.TestCase):
             detector._store_message(message)
 
             # verify message was stored
-            self.assertEqual(len(detector._message_buffer), 1)
-            stored_msg = detector._message_buffer[0]
+            self.assertEqual(detector._message_buffer.size(), 1)
+            stored_messages = detector._message_buffer.get_recent_messages()
+            self.assertEqual(len(stored_messages), 1)
+            stored_msg = stored_messages[0]
             self.assertEqual(stored_msg["text"], "test message")
             self.assertEqual(stored_msg["user"], "testuser")
             self.assertEqual(stored_msg["user_id"], 123)

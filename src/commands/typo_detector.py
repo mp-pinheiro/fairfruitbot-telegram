@@ -1,21 +1,21 @@
 import logging
 import re
 import os
-from collections import deque, defaultdict
+from collections import defaultdict
 from telegram import ParseMode
 from telegram.ext import MessageHandler, Filters
 
 from modules import Singleton
 from environment import Environment
-from utils import create_message_data
+from messaging import MessageBuffer
 
 
 class TypoDetector(metaclass=Singleton):
     def __init__(self):
         self._env = Environment()
-        self._target_group_ids = self._env.summary_group_ids
-        # store recent messages from the target groups
-        self._message_buffer = deque(maxlen=50)
+        self._target_group_ids = set(self._env.summary_group_ids)
+        # use shared message buffer instead of own deque
+        self._message_buffer = MessageBuffer(max_size=100)  # Increased to match GroupSummary
         # load Portuguese words for filtering
         self._portuguese_words = self._load_portuguese_words()
         # minimum different users required to trigger (changed to 3 for more specificity)
@@ -132,14 +132,12 @@ class TypoDetector(metaclass=Singleton):
         return True
 
     def _store_message(self, message):
-        """Store message data for typo detection"""
-        if message.chat_id in self._target_group_ids and message.text:
-            try:
-                message_data = create_message_data(message)
-                self._message_buffer.append(message_data)
-            except Exception as e:
-                logging.error(f"Failed to store message: {e}")
-                raise
+        """Store message data for typo detection using shared buffer"""
+        try:
+            return self._message_buffer.store_message(message, self._target_group_ids)
+        except Exception as e:
+            logging.error(f"Failed to store message: {e}")
+            raise
 
     def _detect_typo_pattern(self, current_message):
         """
@@ -165,7 +163,8 @@ class TypoDetector(metaclass=Singleton):
             has_full_message = False     # typo as the full message
 
             # search through recent messages in chronological order
-            for msg_data in list(self._message_buffer):
+            recent_messages = self._message_buffer.get_recent_messages()
+            for msg_data in recent_messages:
                 msg_typos = self._extract_potential_typos(msg_data["text"])
                 
                 if typo in msg_typos:
