@@ -1,5 +1,6 @@
 import logging
 import re
+import os
 from collections import deque, defaultdict
 from telegram import ParseMode
 from telegram.ext import MessageHandler, Filters
@@ -15,12 +16,33 @@ class TypoDetector(metaclass=Singleton):
         self._target_group_ids = self._env.summary_group_ids
         # store recent messages from the target groups
         self._message_buffer = deque(maxlen=50)
-        # track how many times each potential typo appears
-        self._typo_count = defaultdict(int)
-        # store the original message for each typo
-        self._typo_original = {}
-        # minimum repetitions to consider it a typo pattern
-        self._min_repetitions = 1
+        # load Portuguese words for filtering
+        self._portuguese_words = self._load_portuguese_words()
+        # minimum different users required to trigger (changed to 3 for more specificity)
+        self._min_users = 3
+
+    def _load_portuguese_words(self):
+        """Load Portuguese words from the word list file"""
+        portuguese_words = set()
+        try:
+            # Get the path to the data directory relative to this file
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            root_dir = os.path.dirname(os.path.dirname(current_dir))
+            words_file = os.path.join(root_dir, 'data', 'portuguese_words.txt')
+            
+            if os.path.exists(words_file):
+                with open(words_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        word = line.strip().lower()
+                        if word:
+                            portuguese_words.add(word)
+                logging.info(f"Loaded {len(portuguese_words)} Portuguese words for filtering")
+            else:
+                logging.warning(f"Portuguese words file not found at {words_file}")
+        except Exception as e:
+            logging.error(f"Error loading Portuguese words: {e}")
+        
+        return portuguese_words
 
     def _extract_potential_typos(self, message_text):
         """
@@ -38,14 +60,19 @@ class TypoDetector(metaclass=Singleton):
         if len(text) <= 20:
             words = text.split()
             if len(words) <= 2:
-                if self._is_potential_typo_word(text):
-                    potential_typos.add(text)
+                # Clean the entire text for potential typo check
+                cleaned_text = re.sub(r'^[^\w]+|[^\w]+$', '', text)
+                if self._is_potential_typo_word(cleaned_text):
+                    potential_typos.add(cleaned_text)
 
         # also check individual words in longer messages
         words = text.split()
         for word in words:
             if self._is_potential_typo_word(word):
-                potential_typos.add(word)
+                # Add the cleaned version of the word (punctuation removed)
+                cleaned_word = re.sub(r'^[^\w]+|[^\w]+$', '', word.strip().lower())
+                if cleaned_word:
+                    potential_typos.add(cleaned_word)
 
         return list(potential_typos)
 
@@ -53,8 +80,10 @@ class TypoDetector(metaclass=Singleton):
         """
         Determine if a single word could be a typo.
         """
-        # clean word
+        # clean word and remove punctuation
         word = word.strip().lower()
+        # Remove common punctuation from the end/beginning of words
+        word = re.sub(r'^[^\w]+|[^\w]+$', '', word)
 
         # ignore empty words
         if not word:
@@ -68,130 +97,24 @@ class TypoDetector(metaclass=Singleton):
         if len(word) > 15:
             return False
 
-        # ignore common words that aren't typos
-        common_words = {
-            "sim",
-            "não",
-            "nao",
-            "ok",
-            "oi",
-            "tchau",
-            "obrigado",
-            "obrigada",
-            "valeu",
-            "kkkk",
-            "kkk",
-            "rsrs",
-            "haha",
-            "hehe",
-            "top",
-            "legal",
-            "massa",
-            "show",
-            "blz",
-            "beleza",
-            "pqp",
-            "mano",
-            "cara",
-            "né",
-            "ne",
-            "pra",
-            "pro",
-            "que",
-            "q",
-            "eh",
-            "é",
-            "ta",
-            "tá",
-            "com",
-            "sem",
-            "por",
-            "para",
-            "mais",
-            "menos",
-            "muito",
-            "pouco",
-            "bem",
-            "mal",
-            "foi",
-            "vai",
-            "tem",
-            "ter",
-            "ser",
-            "estar",
-            "fazer",
-            "dar",
-            "ver",
-            # add more common Portuguese words
-            "de",
-            "do",
-            "da",
-            "dos",
-            "das",
-            "em",
-            "no",
-            "na",
-            "nos",
-            "nas",
-            "um",
-            "uma",
-            "uns",
-            "umas",
-            "ou",
-            "se",
-            "me",
-            "te",
-            "lhe",
-            "nos",
-            "vos",
-            "lhes",
-            "meu",
-            "minha",
-            "meus",
-            "minhas",
-            "seu",
-            "sua",
-            "seus",
-            "suas",
-            "nosso",
-            "nossa",
-            "nossos",
-            "nossas",
-            "este",
-            "esta",
-            "estes",
-            "estas",
-            "esse",
-            "essa",
-            "esses",
-            "essas",
-            "aquele",
-            "aquela",
-            "aqueles",
-            "aquelas",
-            "isto",
-            "isso",
-            "aquilo",
-            "boca",
-            "cheia",
-            "meio",
-            "cheio",
-            "toda",
-            "todo",
-            "todos",
-            "todas",
-            "cada",
-            "alguns",
-            "algumas",
-            "nenhum",
-            "nenhuma",
-            "outro",
-            "outra",
-            "outros",
-            "outras",
+        # ignore Portuguese words using the loaded word list
+        if word in self._portuguese_words:
+            return False
+
+        # ignore basic common words that might not be in the Portuguese list
+        basic_common_words = {
+            "sim", "não", "nao", "ok", "oi", "tchau", "obrigado", "obrigada",
+            "valeu", "kkkk", "kkk", "rsrs", "haha", "hehe", "top", "legal",
+            "massa", "show", "blz", "beleza", "pqp", "mano", "cara", "né", "ne",
+            # Common English words that might appear in mixed messages
+            "the", "and", "but", "you", "are", "can", "get", "all", "new", "now",
+            "old", "see", "him", "her", "its", "our", "out", "day", "way", "use",
+            "man", "may", "say", "she", "how", "who", "oil", "sit", "set", "run",
+            "eat", "far", "sea", "eye", "was", "boy", "girl", "this", "is", "a",
+            "very", "long", "message", "that", "should", "not", "be", "considered", "typo"
         }
 
-        if word in common_words:
+        if word in basic_common_words:
             return False
 
         # ignore repeated character patterns like "kkkkk", "hahaha", etc.
@@ -204,10 +127,6 @@ class TypoDetector(metaclass=Singleton):
 
         # ignore pure emoji or symbols
         if re.match(r"^[^\w\s]+$", word):
-            return False
-
-        # ignore words with punctuation (likely not typos)
-        if re.search(r"[.!?:;,]", word):
             return False
 
         return True
@@ -226,6 +145,10 @@ class TypoDetector(metaclass=Singleton):
         """
         Detect if the current message contains a typo that's part of a repetition pattern
         Returns the original message if pattern detected, None otherwise
+        
+        New pattern: requires 3 different users with specific conditions:
+        - At least one occurrence as part of a longer message (original context)
+        - At least one occurrence as the full message (≤ 2 words)
         """
         # extract potential typos from current message
         current_typos = self._extract_potential_typos(current_message.text)
@@ -237,32 +160,43 @@ class TypoDetector(metaclass=Singleton):
         for typo in current_typos:
             # look for this typo in recent messages (including current)
             original_msg = None
-            repetition_count = 0
             different_users = set()
+            has_part_of_message = False  # typo as part of longer message
+            has_full_message = False     # typo as the full message
 
-            # search through recent messages in chronological order to find the original
+            # search through recent messages in chronological order
             for msg_data in list(self._message_buffer):
                 msg_typos = self._extract_potential_typos(msg_data["text"])
                 
                 if typo in msg_typos:
-                    repetition_count += 1
                     different_users.add(msg_data["user_id"])
 
                     # store the earliest occurrence as original
                     if original_msg is None:
                         original_msg = msg_data
+                    
+                    # check message context
+                    words = msg_data["text"].strip().split()
+                    if len(words) <= 2:
+                        has_full_message = True
+                    else:
+                        has_part_of_message = True
 
-            # also count the current message
-            repetition_count += 1
+            # also check the current message
             different_users.add(current_message.from_user.id)
+            current_words = current_message.text.strip().split()
+            if len(current_words) <= 2:
+                has_full_message = True
+            else:
+                has_part_of_message = True
 
             # pattern detected if:
-            # 1. At least min_repetitions + 1 occurrences (original + min_repetitions repeats)
-            # 2. At least 2 different users involved
-            if (
-                repetition_count >= (self._min_repetitions + 1)
-                and len(different_users) >= 2
-            ):
+            # 1. Same word appears by 3 different users
+            # 2. At least one occurrence is part of a longer message
+            # 3. At least one occurrence is the full message
+            if (len(different_users) >= 3 and 
+                has_part_of_message and 
+                has_full_message):
                 return original_msg
 
         return None
