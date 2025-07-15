@@ -22,8 +22,8 @@ class TestTypoDetector(unittest.TestCase):
             # these should be considered potential typos
             self.assertIn("jgoar", detector._extract_potential_typos("jgoar"))
             self.assertIn("jgoar", detector._extract_potential_typos("pra jgoar jogo"))
-            self.assertIn("jogar", detector._extract_potential_typos("jogar"))
-            self.assertIn("erro", detector._extract_potential_typos("erro"))
+            self.assertIn("tendeyu", detector._extract_potential_typos("tendeyu"))
+            self.assertIn("xwqerr", detector._extract_potential_typos("xwqerr"))
 
     def test_is_potential_typo_invalid_cases(self):
         """Test that common words and phrases are not considered typos"""
@@ -45,6 +45,9 @@ class TestTypoDetector(unittest.TestCase):
                 )
             )
             self.assertEqual([], detector._extract_potential_typos("😂😂😂"))
+            # Test Portuguese words are filtered out
+            self.assertEqual([], detector._extract_potential_typos("casa"))
+            self.assertEqual([], detector._extract_potential_typos("limão"))
 
     def test_store_message(self):
         """Test message storage functionality"""
@@ -220,7 +223,7 @@ class TestTypoDetector(unittest.TestCase):
                 
             detector = TypoDetector()
             
-            # Test that common words are correctly excluded
+            # Test that common Portuguese words are correctly excluded using the word list
             self.assertEqual([], detector._extract_potential_typos("eu lembro da sua massagista perguntando sobre limão pra vc"))
             self.assertEqual([], detector._extract_potential_typos("perguntando se eu gostava de capim limão"))
             
@@ -231,6 +234,50 @@ class TestTypoDetector(unittest.TestCase):
             # Test that limão is NOT considered a typo (this was the main issue)
             self.assertNotIn("limão", detector._extract_potential_typos("eu lembro da sua massagista perguntando sobre limão pra vc"))
             self.assertNotIn("limão", detector._extract_potential_typos("perguntando se eu gostava de capim limão"))
+
+    def test_new_trigger_logic_2_users(self):
+        """Test the new simplified trigger logic: 2 different users"""
+        with patch.dict(
+            os.environ,
+            {"TELEGRAM_TOKEN": "test_token", "SUMMARY_GROUP_IDS": "-1001467780714"},
+        ):
+            # Clear singleton instance
+            if hasattr(TypoDetector, "_instances"):
+                TypoDetector._instances.clear()
+                
+            detector = TypoDetector()
+
+            # Create mock messages for typo pattern
+            # User1 says "jgoar" (original typo)
+            original_msg = Mock()
+            original_msg.chat_id = -1001467780714
+            original_msg.text = "jgoar"
+            original_msg.from_user.username = "user1"
+            original_msg.from_user.first_name = "User1"
+            original_msg.from_user.id = 123
+            original_msg.date = "2024-01-01T10:00:00"
+            original_msg.message_id = 100
+
+            # User2 repeats "jgoar" - should trigger immediately
+            repeat_msg = Mock()
+            repeat_msg.chat_id = -1001467780714
+            repeat_msg.text = "jgoar"
+            repeat_msg.from_user.username = "user2"
+            repeat_msg.from_user.first_name = "User2"
+            repeat_msg.from_user.id = 456
+            repeat_msg.date = "2024-01-01T10:01:00"
+            repeat_msg.message_id = 101
+
+            # Store the original message
+            detector._store_message(original_msg)
+
+            # Test pattern detection - should trigger with just 2 users
+            detected_original = detector._detect_typo_pattern(repeat_msg)
+
+            # Should detect pattern and return original message
+            self.assertIsNotNone(detected_original)
+            self.assertEqual(detected_original["message_id"], 100)
+            self.assertEqual(detected_original["user_id"], 123)
 
 
 if __name__ == "__main__":

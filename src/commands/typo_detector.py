@@ -1,5 +1,6 @@
 import logging
 import re
+import os
 from collections import deque, defaultdict
 from telegram import ParseMode
 from telegram.ext import MessageHandler, Filters
@@ -15,12 +16,33 @@ class TypoDetector(metaclass=Singleton):
         self._target_group_ids = self._env.summary_group_ids
         # store recent messages from the target groups
         self._message_buffer = deque(maxlen=50)
-        # track how many times each potential typo appears
-        self._typo_count = defaultdict(int)
-        # store the original message for each typo
-        self._typo_original = {}
+        # load Portuguese words for filtering
+        self._portuguese_words = self._load_portuguese_words()
         # minimum repetitions to consider it a typo pattern
         self._min_repetitions = 1
+
+    def _load_portuguese_words(self):
+        """Load Portuguese words from the word list file"""
+        portuguese_words = set()
+        try:
+            # Get the path to the data directory relative to this file
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            root_dir = os.path.dirname(os.path.dirname(current_dir))
+            words_file = os.path.join(root_dir, 'data', 'portuguese_words.txt')
+            
+            if os.path.exists(words_file):
+                with open(words_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        word = line.strip().lower()
+                        if word:
+                            portuguese_words.add(word)
+                logging.info(f"Loaded {len(portuguese_words)} Portuguese words for filtering")
+            else:
+                logging.warning(f"Portuguese words file not found at {words_file}")
+        except Exception as e:
+            logging.error(f"Error loading Portuguese words: {e}")
+        
+        return portuguese_words
 
     def _extract_potential_typos(self, message_text):
         """
@@ -68,202 +90,24 @@ class TypoDetector(metaclass=Singleton):
         if len(word) > 15:
             return False
 
-        # ignore common words that aren't typos
-        common_words = {
-            "sim",
-            "não",
-            "nao",
-            "ok",
-            "oi",
-            "tchau",
-            "obrigado",
-            "obrigada",
-            "valeu",
-            "kkkk",
-            "kkk",
-            "rsrs",
-            "haha",
-            "hehe",
-            "top",
-            "legal",
-            "massa",
-            "show",
-            "blz",
-            "beleza",
-            "pqp",
-            "mano",
-            "cara",
-            "né",
-            "ne",
-            "pra",
-            "pro",
-            "que",
-            "q",
-            "eh",
-            "é",
-            "ta",
-            "tá",
-            "com",
-            "sem",
-            "por",
-            "para",
-            "mais",
-            "menos",
-            "muito",
-            "pouco",
-            "bem",
-            "mal",
-            "foi",
-            "vai",
-            "tem",
-            "ter",
-            "ser",
-            "estar",
-            "fazer",
-            "dar",
-            "ver",
-            # add more common Portuguese words
-            "de",
-            "do",
-            "da",
-            "dos",
-            "das",
-            "em",
-            "no",
-            "na",
-            "nos",
-            "nas",
-            "um",
-            "uma",
-            "uns",
-            "umas",
-            "ou",
-            "se",
-            "me",
-            "te",
-            "lhe",
-            "nos",
-            "vos",
-            "lhes",
-            "meu",
-            "minha",
-            "meus",
-            "minhas",
-            "seu",
-            "sua",
-            "seus",
-            "suas",
-            "nosso",
-            "nossa",
-            "nossos",
-            "nossas",
-            "este",
-            "esta",
-            "estes",
-            "estas",
-            "esse",
-            "essa",
-            "esses",
-            "essas",
-            "aquele",
-            "aquela",
-            "aqueles",
-            "aquelas",
-            "isto",
-            "isso",
-            "aquilo",
-            "boca",
-            "cheia",
-            "meio",
-            "cheio",
-            "toda",
-            "todo",
-            "todos",
-            "todas",
-            "cada",
-            "alguns",
-            "algumas",
-            "nenhum",
-            "nenhuma",
-            "outro",
-            "outra",
-            "outros",
-            "outras",
-            # Common food/objects that shouldn't be typos
-            "limão",
-            "capim",
-            "aroma",
-            "sense",
-            "siciliano",
-            # Common verbs that shouldn't be typos  
-            "lembro",
-            "perguntando",
-            "perguntou",
-            "pergunta",
-            "dando",
-            "gostava",
-            "gosta",
-            "gostar",
-            "massagista",
-            "sobre",
-            "momento",
-            "grande",
-            "tapa",
+        # ignore Portuguese words using the loaded word list
+        if word in self._portuguese_words:
+            return False
+
+        # ignore basic common words that might not be in the Portuguese list
+        basic_common_words = {
+            "sim", "não", "nao", "ok", "oi", "tchau", "obrigado", "obrigada",
+            "valeu", "kkkk", "kkk", "rsrs", "haha", "hehe", "top", "legal",
+            "massa", "show", "blz", "beleza", "pqp", "mano", "cara", "né", "ne",
             # Common English words that might appear in mixed messages
-            "was",
-            "she",
-            "boy",
-            "girl",
-            "the",
-            "and",
-            "but",
-            "you",
-            "are",
-            "can",
-            "get",
-            "all",
-            "new",
-            "now",
-            "old",
-            "see",
-            "him",
-            "her",
-            "its",
-            "our",
-            "out",
-            "day",
-            "way",
-            "use",
-            "man",
-            "may",
-            "say",
-            "she",
-            "how",
-            "who",
-            "oil",
-            "sit",
-            "set",
-            "run",
-            "eat",
-            "far",
-            "sea",
-            "eye",
-            # Additional English words from test
-            "this",
-            "is",
-            "a",
-            "very",
-            "long",
-            "message",
-            "that",
-            "should",
-            "not",
-            "be",
-            "considered",
-            "typo",
+            "the", "and", "but", "you", "are", "can", "get", "all", "new", "now",
+            "old", "see", "him", "her", "its", "our", "out", "day", "way", "use",
+            "man", "may", "say", "she", "how", "who", "oil", "sit", "set", "run",
+            "eat", "far", "sea", "eye", "was", "boy", "girl", "this", "is", "a",
+            "very", "long", "message", "that", "should", "not", "be", "considered", "typo"
         }
 
-        if word in common_words:
+        if word in basic_common_words:
             return False
 
         # ignore repeated character patterns like "kkkkk", "hahaha", etc.
@@ -309,7 +153,6 @@ class TypoDetector(metaclass=Singleton):
         for typo in current_typos:
             # look for this typo in recent messages (including current)
             original_msg = None
-            repetition_count = 0
             different_users = set()
 
             # search through recent messages in chronological order to find the original
@@ -317,7 +160,6 @@ class TypoDetector(metaclass=Singleton):
                 msg_typos = self._extract_potential_typos(msg_data["text"])
                 
                 if typo in msg_typos:
-                    repetition_count += 1
                     different_users.add(msg_data["user_id"])
 
                     # store the earliest occurrence as original
@@ -325,16 +167,10 @@ class TypoDetector(metaclass=Singleton):
                         original_msg = msg_data
 
             # also count the current message
-            repetition_count += 1
             different_users.add(current_message.from_user.id)
 
-            # pattern detected if:
-            # 1. At least min_repetitions + 1 occurrences (original + min_repetitions repeats)
-            # 2. At least 2 different users involved
-            if (
-                repetition_count >= (self._min_repetitions + 1)
-                and len(different_users) >= 2
-            ):
+            # pattern detected if the same word appears by 2 different users
+            if len(different_users) >= 2:
                 return original_msg
 
         return None
