@@ -14,18 +14,13 @@ class TypoDetector(BaseMessageBuffer, metaclass=Singleton):
     def __init__(self):
         self._env = Environment()
         self._target_group_ids = set(self._env.summary_group_ids)
-        # Initialize BaseMessageBuffer with optimal size for typo detection (50 messages)
         super().__init__(max_size=50, target_group_ids=self._target_group_ids)
-        # load Portuguese words for filtering
         self._portuguese_words = self._load_portuguese_words()
-        # minimum different users required to trigger (changed to 3 for more specificity)
         self._min_users = 3
 
     def _load_portuguese_words(self):
-        """Load Portuguese words from the word list file"""
         portuguese_words = set()
         try:
-            # Get the path to the data directory relative to this file
             current_dir = os.path.dirname(os.path.abspath(__file__))
             root_dir = os.path.dirname(os.path.dirname(current_dir))
             words_file = os.path.join(root_dir, 'data', 'portuguese_words.txt')
@@ -45,31 +40,22 @@ class TypoDetector(BaseMessageBuffer, metaclass=Singleton):
         return portuguese_words
 
     def _extract_potential_typos(self, message_text):
-        """
-        Extract potential typos from a message.
-        Returns a list of potential typos found in the message.
-        """
         if not message_text:
             return []
 
-        # clean text
         text = message_text.strip().lower()
-        potential_typos = set()  # use set to avoid duplicates
+        potential_typos = set()
 
-        # if the entire message is short, check if it's a potential typo
         if len(text) <= 20:
             words = text.split()
             if len(words) <= 2:
-                # Clean the entire text for potential typo check
                 cleaned_text = re.sub(r'^[^\w]+|[^\w]+$', '', text)
                 if self._is_potential_typo_word(cleaned_text):
                     potential_typos.add(cleaned_text)
 
-        # also check individual words in longer messages
         words = text.split()
         for word in words:
             if self._is_potential_typo_word(word):
-                # Add the cleaned version of the word (punctuation removed)
                 cleaned_word = re.sub(r'^[^\w]+|[^\w]+$', '', word.strip().lower())
                 if cleaned_word:
                     potential_typos.add(cleaned_word)
@@ -77,36 +63,19 @@ class TypoDetector(BaseMessageBuffer, metaclass=Singleton):
         return list(potential_typos)
 
     def _is_potential_typo_word(self, word):
-        """
-        Determine if a single word could be a typo.
-        """
-        # clean word and remove punctuation
         word = word.strip().lower()
-        # Remove common punctuation from the end/beginning of words
         word = re.sub(r'^[^\w]+|[^\w]+$', '', word)
 
-        # ignore empty words
-        if not word:
+        if not word or len(word) <= 2 or len(word) > 15:
             return False
 
-        # ignore very short words (1-2 chars) unless they look like typos
-        if len(word) <= 2:
-            return False
-
-        # ignore very long words (unlikely to be simple typos)
-        if len(word) > 15:
-            return False
-
-        # ignore Portuguese words using the loaded word list
         if word in self._portuguese_words:
             return False
 
-        # ignore basic common words that might not be in the Portuguese list
         basic_common_words = {
             "sim", "não", "nao", "ok", "oi", "tchau", "obrigado", "obrigada",
             "valeu", "kkkk", "kkk", "rsrs", "haha", "hehe", "top", "legal",
             "massa", "show", "blz", "beleza", "pqp", "mano", "cara", "né", "ne",
-            # Common English words that might appear in mixed messages
             "the", "and", "but", "you", "are", "can", "get", "all", "new", "now",
             "old", "see", "him", "her", "its", "our", "out", "day", "way", "use",
             "man", "may", "say", "she", "how", "who", "oil", "sit", "set", "run",
@@ -117,22 +86,15 @@ class TypoDetector(BaseMessageBuffer, metaclass=Singleton):
         if word in basic_common_words:
             return False
 
-        # ignore repeated character patterns like "kkkkk", "hahaha", etc.
         if len(word) >= 3 and len(set(word)) <= 2:
             return False
 
-        # ignore pure numbers
-        if word.isdigit():
-            return False
-
-        # ignore pure emoji or symbols
-        if re.match(r"^[^\w\s]+$", word):
+        if word.isdigit() or re.match(r"^[^\w\s]+$", word):
             return False
 
         return True
 
     def _store_message(self, message):
-        """Store message data for typo detection using inherited buffer"""
         try:
             return self.store_message(message)
         except Exception as e:
@@ -140,29 +102,17 @@ class TypoDetector(BaseMessageBuffer, metaclass=Singleton):
             raise
 
     def _detect_typo_pattern(self, current_message):
-        """
-        Detect if the current message contains a typo that's part of a repetition pattern
-        Returns the original message if pattern detected, None otherwise
-        
-        New pattern: requires 3 different users with specific conditions:
-        - At least one occurrence as part of a longer message (original context)
-        - At least one occurrence as the full message (≤ 2 words)
-        """
-        # extract potential typos from current message
         current_typos = self._extract_potential_typos(current_message.text)
         
         if not current_typos:
             return None
 
-        # check each potential typo for repetition patterns
         for typo in current_typos:
-            # look for this typo in recent messages (including current)
             original_msg = None
             different_users = set()
-            has_part_of_message = False  # typo as part of longer message
-            has_full_message = False     # typo as the full message
+            has_part_of_message = False
+            has_full_message = False
 
-            # search through recent messages in chronological order
             recent_messages = self.get_recent_messages()
             for msg_data in recent_messages:
                 msg_typos = self._extract_potential_typos(msg_data["text"])
@@ -170,18 +120,15 @@ class TypoDetector(BaseMessageBuffer, metaclass=Singleton):
                 if typo in msg_typos:
                     different_users.add(msg_data["user_id"])
 
-                    # store the earliest occurrence as original
                     if original_msg is None:
                         original_msg = msg_data
                     
-                    # check message context
                     words = msg_data["text"].strip().split()
                     if len(words) <= 2:
                         has_full_message = True
                     else:
                         has_part_of_message = True
 
-            # also check the current message
             different_users.add(current_message.from_user.id)
             current_words = current_message.text.strip().split()
             if len(current_words) <= 2:
@@ -189,10 +136,6 @@ class TypoDetector(BaseMessageBuffer, metaclass=Singleton):
             else:
                 has_part_of_message = True
 
-            # pattern detected if:
-            # 1. Same word appears by 3 different users
-            # 2. At least one occurrence is part of a longer message
-            # 3. At least one occurrence is the full message
             if (len(different_users) >= 3 and 
                 has_part_of_message and 
                 has_full_message):

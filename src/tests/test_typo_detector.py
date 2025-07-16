@@ -2,41 +2,32 @@ import os
 import unittest
 from unittest.mock import Mock, patch
 from commands.typo_detector import TypoDetector
-from messaging.message_buffer import MessageBuffer
 
 
 class TestTypoDetector(unittest.TestCase):
     def setUp(self):
-        """Set up test fixtures"""
-        # clear singleton instances
         if hasattr(TypoDetector, "_instances"):
             TypoDetector._instances.clear()
-        if hasattr(MessageBuffer, "_instances"):
-            MessageBuffer._instances.clear()
 
     def test_is_potential_typo_valid_cases(self):
-        """Test that valid typos are detected"""
         with patch.dict(
             os.environ,
             {"TELEGRAM_TOKEN": "test_token", "SUMMARY_GROUP_IDS": "-1001467780714"},
         ):
             detector = TypoDetector()
 
-            # these should be considered potential typos
             self.assertIn("jgoar", detector._extract_potential_typos("jgoar"))
             self.assertIn("jgoar", detector._extract_potential_typos("pra jgoar jogo"))
             self.assertIn("tendeyu", detector._extract_potential_typos("tendeyu"))
             self.assertIn("xwqerr", detector._extract_potential_typos("xwqerr"))
 
     def test_is_potential_typo_invalid_cases(self):
-        """Test that common words and phrases are not considered typos"""
         with patch.dict(
             os.environ,
             {"TELEGRAM_TOKEN": "test_token", "SUMMARY_GROUP_IDS": "-1001467780714"},
         ):
             detector = TypoDetector()
 
-            # these should NOT be considered potential typos
             self.assertEqual([], detector._extract_potential_typos("sim"))
             self.assertEqual([], detector._extract_potential_typos("ok"))
             self.assertEqual([], detector._extract_potential_typos("kkkkk"))
@@ -48,19 +39,16 @@ class TestTypoDetector(unittest.TestCase):
                 )
             )
             self.assertEqual([], detector._extract_potential_typos("😂😂😂"))
-            # Test Portuguese words are filtered out
             self.assertEqual([], detector._extract_potential_typos("casa"))
             self.assertEqual([], detector._extract_potential_typos("limão"))
 
     def test_store_message(self):
-        """Test message storage functionality"""
         with patch.dict(
             os.environ,
             {"TELEGRAM_TOKEN": "test_token", "SUMMARY_GROUP_IDS": "-1001467780714"},
         ):
             detector = TypoDetector()
 
-            # create mock message
             message = Mock()
             message.chat_id = -1001467780714
             message.text = "test message"
@@ -70,12 +58,10 @@ class TestTypoDetector(unittest.TestCase):
             message.date = "2024-01-01"
             message.message_id = 456
 
-            # store message
             detector._store_message(message)
 
-            # verify message was stored
-            self.assertEqual(detector._message_buffer.size(), 1)
-            stored_messages = detector._message_buffer.get_recent_messages()
+            self.assertEqual(detector.size(), 1)
+            stored_messages = detector.get_recent_messages()
             self.assertEqual(len(stored_messages), 1)
             stored_msg = stored_messages[0]
             self.assertEqual(stored_msg["text"], "test message")

@@ -12,19 +12,15 @@ class GroupSummary(BaseMessageBuffer, metaclass=Singleton):
     def __init__(self):
         self._env = Environment()
         self._target_group_ids = set(self._env.summary_group_ids)
-        # Initialize BaseMessageBuffer with optimal size for group summary (100 messages)
         super().__init__(max_size=100, target_group_ids=self._target_group_ids)
         self._trigger_patterns = ["6 falam", "vcs falam", "ces falam", "6️⃣"]
         self._openai_client = OpenAIClient()
-        # privacy manager for anonymizing usernames in LLM calls
         self._privacy_manager = PrivacyManager()
 
     def _should_trigger(self, message_text, chat_id):
-        # check if it's one of the target groups
         if chat_id not in self._target_group_ids:
             return False
 
-        # check if message contains any trigger patterns
         message_lower = message_text.lower()
         for pattern in self._trigger_patterns:
             if pattern.lower() in message_lower:
@@ -33,12 +29,10 @@ class GroupSummary(BaseMessageBuffer, metaclass=Singleton):
         return False
 
     def _store_message(self, message):
-        """Store message data using inherited buffer"""
         try:
             return self.store_message(message)
         except Exception as e:
             logging.error(f"Failed to store message: {e}")
-            # re-raise to let caller know storage failed
             raise
 
     def _get_recent_messages(self, limit=100):
