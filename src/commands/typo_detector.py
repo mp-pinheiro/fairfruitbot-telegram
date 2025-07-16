@@ -20,6 +20,9 @@ class TypoDetector(metaclass=Singleton):
         self._portuguese_words = self._load_portuguese_words()
         # minimum different users required to trigger (changed to 3 for more specificity)
         self._min_users = 3
+        
+        # Log initialization for debugging
+        logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, min users: {self._min_users}, Portuguese words: {len(self._portuguese_words)}")
 
     def _load_portuguese_words(self):
         """Load Portuguese words from the word list file"""
@@ -207,9 +210,17 @@ class TypoDetector(metaclass=Singleton):
             return
 
         chat_id = message.chat_id
+        
+        # Log messages for debugging (similar to GroupSummary format)
+        try:
+            user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
+            logging.info(f"TypoDetector - chat: {chat_id} - user: {user_info} - text: {message.text}")
+        except Exception:
+            logging.info(f"TypoDetector - chat: {chat_id} - text: {message.text}")
 
         # only process messages from target groups
         if chat_id not in self._target_group_ids:
+            logging.debug(f"TypoDetector - ignoring message from chat {chat_id} (not in target groups: {list(self._target_group_ids)})")
             return
 
         try:
