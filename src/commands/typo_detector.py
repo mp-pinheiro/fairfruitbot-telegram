@@ -20,12 +20,15 @@ class TypoDetector(metaclass=Singleton):
         self._portuguese_words = self._load_portuguese_words()
         # minimum different users required to trigger (changed to 3 for more specificity)
         self._min_users = 3
+        
+        logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, min users: {self._min_users}, Portuguese words: {len(self._portuguese_words)}")
+        logging.info(f"TypoDetector setup complete and ready to process messages")
 
     def _load_portuguese_words(self):
         """Load Portuguese words from the word list file"""
         portuguese_words = set()
         try:
-            # Get the path to the data directory relative to this file
+            # get the path to the data directory relative to this file
             current_dir = os.path.dirname(os.path.abspath(__file__))
             root_dir = os.path.dirname(os.path.dirname(current_dir))
             words_file = os.path.join(root_dir, 'data', 'portuguese_words.txt')
@@ -207,9 +210,16 @@ class TypoDetector(metaclass=Singleton):
             return
 
         chat_id = message.chat_id
+        
+        try:
+            user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
+            logging.info(f"TypoDetector - chat: {chat_id} - user: {user_info} - text: {message.text}")
+        except Exception:
+            logging.info(f"TypoDetector - chat: {chat_id} - text: {message.text}")
 
         # only process messages from target groups
         if chat_id not in self._target_group_ids:
+            logging.info(f"TypoDetector - ignoring message from chat {chat_id} (not in target groups: {list(self._target_group_ids)})")
             return
 
         try:
@@ -242,3 +252,4 @@ class TypoDetector(metaclass=Singleton):
     def setup(self, dispatcher):
         message_handler = MessageHandler(Filters.text & Filters.group, self._process)
         dispatcher.add_handler(message_handler)
+        logging.info("TypoDetector handler registered successfully")
