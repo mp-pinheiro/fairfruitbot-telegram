@@ -8,23 +8,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from commands.typo_detector import TypoDetector
 from commands.group_summary import GroupSummary
-from messaging.message_buffer import MessageBuffer
+from messaging import get_shared_message_buffer
 
 
 class TestMessageIntegration(unittest.TestCase):
     """Test that TypoDetector and GroupSummary properly share the MessageBuffer"""
     
     def setUp(self):
-        # Clear singleton instances before each test
-        TypoDetector._instances = {}
-        GroupSummary._instances = {}
-        MessageBuffer._instances = {}
+        # Clear the shared buffer before each test
+        get_shared_message_buffer().clear()
         
     def tearDown(self):
         # Clean up after each test
-        TypoDetector._instances = {}
-        GroupSummary._instances = {}
-        MessageBuffer._instances = {}
+        get_shared_message_buffer().clear()
         
     def test_shared_message_buffer(self):
         """Test that both components use the same MessageBuffer instance"""

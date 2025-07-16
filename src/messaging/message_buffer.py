@@ -1,11 +1,10 @@
 import logging
 from collections import deque
 from typing import Dict, List, Optional, Set, Callable
-from modules import Singleton
 from utils import create_message_data
 
 
-class MessageBuffer(metaclass=Singleton):
+class MessageBuffer:
     """
     Shared message buffer for commands that need to read and store messages.
     Eliminates duplication between TypoDetector and GroupSummary.
@@ -109,3 +108,13 @@ class MessageBuffer(metaclass=Singleton):
     def size(self) -> int:
         """Get current number of messages in buffer"""
         return len(self._buffer)
+
+
+# Create a shared instance that commands can use
+# This eliminates the singleton confusion while still providing shared storage
+_shared_message_buffer = MessageBuffer(max_size=100)
+
+
+def get_shared_message_buffer() -> MessageBuffer:
+    """Get the shared MessageBuffer instance"""
+    return _shared_message_buffer

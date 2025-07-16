@@ -2,20 +2,20 @@ import logging
 import re
 import os
 from collections import defaultdict
-from telegram import ParseMode
+from telegram.constants import ParseMode
 from telegram.ext import MessageHandler, Filters
 
 from modules import Singleton
 from environment import Environment
-from messaging import MessageBuffer
+from messaging import get_shared_message_buffer
 
 
 class TypoDetector(metaclass=Singleton):
     def __init__(self):
         self._env = Environment()
         self._target_group_ids = set(self._env.summary_group_ids)
-        # use shared message buffer instead of own deque
-        self._message_buffer = MessageBuffer(max_size=100)  # Increased to match GroupSummary
+        # use shared message buffer instance
+        self._message_buffer = get_shared_message_buffer()
         # load Portuguese words for filtering
         self._portuguese_words = self._load_portuguese_words()
         # minimum different users required to trigger (changed to 3 for more specificity)

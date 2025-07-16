@@ -1,4 +1,4 @@
-from telegram import ParseMode
+from telegram.constants import ParseMode
 
 from commands import Sign
 from modules import PredictionModule

@@ -6,25 +6,29 @@ import os
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from messaging.message_buffer import MessageBuffer
+from messaging.message_buffer import MessageBuffer, get_shared_message_buffer
 
 
 class TestMessageBuffer(unittest.TestCase):
     
     def setUp(self):
-        # Clear the singleton instance before each test
-        MessageBuffer._instances = {}
         self.buffer = MessageBuffer(max_size=5)
         
     def tearDown(self):
-        # Clean up after each test
-        MessageBuffer._instances = {}
+        # Clear the shared buffer after each test
+        get_shared_message_buffer().clear()
         
-    def test_singleton_behavior(self):
-        """Test that MessageBuffer follows singleton pattern"""
+    def test_shared_instance_behavior(self):
+        """Test that get_shared_message_buffer returns the same instance"""
+        buffer1 = get_shared_message_buffer()
+        buffer2 = get_shared_message_buffer()
+        self.assertIs(buffer1, buffer2)
+        
+    def test_separate_instances_are_different(self):
+        """Test that creating MessageBuffer instances directly creates separate objects"""
         buffer1 = MessageBuffer()
         buffer2 = MessageBuffer()
-        self.assertIs(buffer1, buffer2)
+        self.assertIsNot(buffer1, buffer2)
         
     def test_store_message_valid(self):
         """Test storing a valid message"""

@@ -1,11 +1,11 @@
 import logging
-from telegram import ParseMode
+from telegram.constants import ParseMode
 from telegram.ext import MessageHandler, Filters
 
 from clients import OpenAIClient
 from modules import Singleton
 from environment import Environment
-from messaging import MessageBuffer
+from messaging import get_shared_message_buffer, PrivacyManager
 
 
 class GroupSummary(metaclass=Singleton):
@@ -14,8 +14,10 @@ class GroupSummary(metaclass=Singleton):
         self._target_group_ids = set(self._env.summary_group_ids)
         self._trigger_patterns = ["6 falam", "vcs falam", "ces falam", "6️⃣"]
         self._openai_client = OpenAIClient()
-        # use shared message buffer instead of own deque
-        self._message_buffer = MessageBuffer(max_size=100)
+        # use shared message buffer instance
+        self._message_buffer = get_shared_message_buffer()
+        # privacy manager for anonymizing usernames in LLM calls
+        self._privacy_manager = PrivacyManager()
 
     def _should_trigger(self, message_text, chat_id):
         # check if it's one of the target groups
@@ -57,10 +59,12 @@ class GroupSummary(metaclass=Singleton):
             if not filtered_messages:
                 return ["[Nenhuma mensagem recente disponível]"]
 
-            # convert to text format for summarization
+            # convert to text format for summarization with privacy protection
             messages = []
             for msg_data in filtered_messages:
-                formatted_msg = f"{msg_data['user']}: {msg_data['text']}"
+                # anonymize username for LLM call
+                anonymous_username = self._privacy_manager.anonymize_username(msg_data['user'])
+                formatted_msg = f"{anonymous_username}: {msg_data['text']}"
                 messages.append(formatted_msg)
 
             return messages
@@ -92,6 +96,10 @@ class GroupSummary(metaclass=Singleton):
             summary = self._openai_client.make_request(
                 messages=openai_messages, max_tokens=300
             )
+
+            # deanonymize the response to restore real usernames
+            if summary:
+                summary = self._privacy_manager.deanonymize_text(summary)
 
             return summary.strip() if summary else "Não foi possível gerar um resumo."
 

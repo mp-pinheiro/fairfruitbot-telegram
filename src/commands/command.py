@@ -1,6 +1,6 @@
 import logging
 
-from telegram import ParseMode
+from telegram.constants import ParseMode
 from telegram.ext import CommandHandler
 
 from modules import Singleton
