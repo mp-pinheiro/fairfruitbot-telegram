@@ -165,5 +165,6 @@ class GroupSummary(metaclass=Singleton):
             )
 
     def setup(self, dispatcher):
+        # Register with lower priority (group 1) to process after TypoDetector
         message_handler = MessageHandler(Filters.text & Filters.group, self._process)
-        dispatcher.add_handler(message_handler)
+        dispatcher.add_handler(message_handler, group=1)

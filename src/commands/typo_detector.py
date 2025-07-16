@@ -20,10 +20,6 @@ class TypoDetector(metaclass=Singleton):
         self._portuguese_words = self._load_portuguese_words()
         # minimum different users required to trigger (changed to 3 for more specificity)
         self._min_users = 3
-        
-        # log TypoDetector configuration for debugging
-        logging.info(f"TypoDetector initialized - target groups: {self._target_group_ids}, min users: {self._min_users}, Portuguese words: {len(self._portuguese_words)}")
-        logging.info(f"TypoDetector initialization complete - ready to process messages")
 
     def _load_portuguese_words(self):
         """Load Portuguese words from the word list file"""
@@ -206,64 +202,51 @@ class TypoDetector(metaclass=Singleton):
         return None
 
     def _process(self, update, context):
+        message = update.message
+        if not message or not message.text:
+            return
+
+        chat_id = message.chat_id
+        
+        # Log messages for debugging (similar to GroupSummary format)
         try:
-            message = update.message
-            if not message or not message.text:
-                return
+            user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
+            logging.info(f"TypoDetector - chat: {chat_id} - user: {user_info} - text: {message.text}")
+        except Exception:
+            logging.info(f"TypoDetector - chat: {chat_id} - text: {message.text}")
 
-            chat_id = message.chat_id
-            
-            # log all messages processed by TypoDetector for debugging
-            try:
-                user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
-                logging.info(
-                    f"TypoDetector - chat: {chat_id} - user: {user_info} - text: {message.text}"
+        # only process messages from target groups
+        if chat_id not in self._target_group_ids:
+            return
+
+        try:
+            # check for typo pattern BEFORE storing the current message
+            original_msg = self._detect_typo_pattern(message)
+
+            # store the message after pattern detection
+            self._store_message(message)
+
+            if original_msg:
+                # send the response as a reply to the original message
+                response_text = "Pronto, proibido errar nesse grupo. 🤪"
+
+                context.bot.send_message(
+                    chat_id=chat_id,
+                    text=response_text,
+                    reply_to_message_id=original_msg["message_id"],
+                    parse_mode=ParseMode.HTML,
                 )
-            except Exception:
-                logging.info(f"TypoDetector - chat: {chat_id} - text: {message.text}")
 
-            # only process messages from target groups
-            if chat_id not in self._target_group_ids:
-                logging.debug(f"TypoDetector - ignoring message from chat {chat_id} (not in target groups: {self._target_group_ids})")
-                return
+                # only log when we actually trigger
+                logging.info(
+                    f"TypoDetector triggered for typo: '{message.text}' - "
+                    f"original by user {original_msg['user']}"
+                )
 
-            try:
-                # check for typo pattern BEFORE storing the current message
-                original_msg = self._detect_typo_pattern(message)
-
-                # store the message after pattern detection
-                self._store_message(message)
-
-                if original_msg:
-                    # send the response as a reply to the original message
-                    response_text = "Pronto, proibido errar nesse grupo. 🤪"
-
-                    context.bot.send_message(
-                        chat_id=chat_id,
-                        text=response_text,
-                        reply_to_message_id=original_msg["message_id"],
-                        parse_mode=ParseMode.HTML,
-                    )
-
-                    # only log when we actually trigger
-                    logging.info(
-                        f"TypoDetector triggered for typo: '{message.text}' - "
-                        f"original by user {original_msg['user']}"
-                    )
-
-            except Exception as e:
-                logging.error(f"Error in TypoDetector._process inner logic: {e}")
-                # Don't re-raise to avoid stopping message processing
-                
         except Exception as e:
-            logging.error(f"Critical error in TypoDetector._process: {e}")
-            # Log but don't re-raise to avoid breaking the bot
+            logging.error(f"Error in TypoDetector._process: {e}")
 
     def setup(self, dispatcher):
-        try:
-            message_handler = MessageHandler(Filters.text & Filters.group, self._process)
-            dispatcher.add_handler(message_handler)
-            logging.info(f"TypoDetector handler registered successfully for groups: {self._target_group_ids}")
-        except Exception as e:
-            logging.error(f"Failed to register TypoDetector handler: {e}")
-            raise
+        # Register with higher priority (group 0) to process before GroupSummary
+        message_handler = MessageHandler(Filters.text & Filters.group, self._process)
+        dispatcher.add_handler(message_handler, group=0)
