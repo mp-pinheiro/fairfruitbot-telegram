@@ -211,7 +211,6 @@ class TypoDetector(metaclass=Singleton):
 
         chat_id = message.chat_id
         
-        # Log messages for debugging (similar to GroupSummary format)
         try:
             user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
             logging.info(f"TypoDetector - chat: {chat_id} - user: {user_info} - text: {message.text}")
