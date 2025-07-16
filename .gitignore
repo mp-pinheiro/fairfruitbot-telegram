@@ -3,3 +3,4 @@ __pycache__/
 .env
 collaborators.json
 *.bsp
+test_*.py
