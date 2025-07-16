@@ -57,51 +57,73 @@ class GroupSummary(metaclass=Singleton):
             )
             
             if not filtered_messages:
-                return ["[Nenhuma mensagem recente disponível]"]
+                return [], []
 
-            # convert to text format for summarization with privacy protection
-            messages = []
+            # separate usernames and message texts for privacy processing
+            usernames = set()
+            message_texts = []
+            formatted_messages = []
+            
             for msg_data in filtered_messages:
-                # anonymize username for LLM call
-                anonymous_username = self._privacy_manager.anonymize_username(msg_data['user'])
-                formatted_msg = f"{anonymous_username}: {msg_data['text']}"
-                messages.append(formatted_msg)
+                username = msg_data['user']
+                text = msg_data['text']
+                usernames.add(username)
+                message_texts.append(text)
+                # Store the original format for later anonymization
+                formatted_messages.append((username, text))
 
-            return messages
+            return formatted_messages, message_texts
 
         except Exception as e:
             logging.error(f"Error getting recent messages: {e}")
-            return ["[Erro ao recuperar mensagens]"]
+            return [], []
 
-    def _summarize_messages(self, messages):
+    def _summarize_messages(self, formatted_messages, message_texts):
         try:
-            # prepare the conversation context for OpenAI
-            messages_text = "\n".join(messages)
+            if not formatted_messages:
+                return "Não foi possível gerar um resumo."
+                
+            # Extract usernames for privacy session
+            usernames = {username for username, _ in formatted_messages}
+            
+            # Use privacy session for secure anonymization
+            with self._privacy_manager.create_privacy_session(usernames, message_texts) as session:
+                # anonymize messages for LLM call
+                anonymized_messages = []
+                for username, text in formatted_messages:
+                    anonymous_username = session.get_anonymous_username(username)
+                    # also anonymize any usernames mentioned in text content
+                    anonymous_text = session.anonymize_text(text)
+                    formatted_msg = f"{anonymous_username}: {anonymous_text}"
+                    anonymized_messages.append(formatted_msg)
+                
+                # prepare the conversation context for OpenAI
+                messages_text = "\n".join(anonymized_messages)
 
-            system_prompt = (
-                "Você é um assistente que resume conversas em português brasileiro. "
-                "Crie um resumo conciso e natural do que foi discutido, "
-                "focando nos principais tópicos e pontos importantes. "
-                "Mantenha o resumo breve e informativo. "
-                "NÃO comece o resumo com 'Resumo da conversa' ou similar."
-            )
+                system_prompt = (
+                    "Você é um assistente que resume conversas em português brasileiro. "
+                    "Crie um resumo conciso e natural do que foi discutido, "
+                    "focando nos principais tópicos e pontos importantes. "
+                    "Mantenha o resumo breve e informativo. "
+                    "NÃO comece o resumo com 'Resumo da conversa' ou similar."
+                )
 
-            user_prompt = f"Resuma esta conversa em português:\n\n{messages_text}"
+                user_prompt = f"Resuma esta conversa em português:\n\n{messages_text}"
 
-            openai_messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ]
+                openai_messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ]
 
-            summary = self._openai_client.make_request(
-                messages=openai_messages, max_tokens=300
-            )
+                summary = self._openai_client.make_request(
+                    messages=openai_messages, max_tokens=300
+                )
 
-            # deanonymize the response to restore real usernames
-            if summary:
-                summary = self._privacy_manager.deanonymize_text(summary)
+                # deanonymize the response to restore real usernames
+                if summary:
+                    summary = session.deanonymize_text(summary)
 
-            return summary.strip() if summary else "Não foi possível gerar um resumo."
+                return summary.strip() if summary else "Não foi possível gerar um resumo."
 
         except Exception as e:
             logging.error(f"Error summarizing messages: {e}")
@@ -137,10 +159,10 @@ class GroupSummary(metaclass=Singleton):
 
         try:
             # get recent messages from our buffer
-            recent_messages = self._get_recent_messages()
+            formatted_messages, message_texts = self._get_recent_messages()
 
             # skip if we don't have enough messages
-            if len(recent_messages) < 5:
+            if len(formatted_messages) < 5:
                 context.bot.send_message(
                     chat_id=chat_id,
                     text="6️⃣ falam eim! Mas ainda não tenho mensagens suficientes para resumir.",
@@ -149,7 +171,7 @@ class GroupSummary(metaclass=Singleton):
                 return
 
             # generate summary
-            summary = self._summarize_messages(recent_messages)
+            summary = self._summarize_messages(formatted_messages, message_texts)
 
             # send response
             response_text = (
