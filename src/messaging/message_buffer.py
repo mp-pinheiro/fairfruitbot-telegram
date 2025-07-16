@@ -13,21 +13,6 @@ class MessageBuffer(metaclass=Singleton):
     
     def __init__(self, max_size: int = 100):
         self._buffer = deque(maxlen=max_size)
-        self._subscribers = {}  # subscriber_id -> callback
-        
-    def add_subscriber(self, subscriber_id: str, callback: Callable):
-        """
-        Add a subscriber that will be notified when new messages are stored.
-        
-        Args:
-            subscriber_id: Unique identifier for the subscriber
-            callback: Function to call with (message_data, buffer) when message is stored
-        """
-        self._subscribers[subscriber_id] = callback
-        
-    def remove_subscriber(self, subscriber_id: str):
-        """Remove a subscriber"""
-        self._subscribers.pop(subscriber_id, None)
         
     def store_message(self, message, target_group_ids: Set[int]) -> bool:
         """
@@ -49,14 +34,6 @@ class MessageBuffer(metaclass=Singleton):
         try:
             message_data = create_message_data(message)
             self._buffer.append(message_data)
-            
-            # Notify subscribers
-            for subscriber_id, callback in self._subscribers.items():
-                try:
-                    callback(message_data, self)
-                except Exception as e:
-                    logging.error(f"Error in subscriber {subscriber_id} callback: {e}")
-                    
             return True
             
         except Exception as e:

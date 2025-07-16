@@ -182,44 +182,7 @@ class TestMessageBuffer(unittest.TestCase):
         matches = self.buffer.find_messages_with_text("hello")
         self.assertEqual(len(matches), 2)
         
-    def test_subscriber_notification(self):
-        """Test that subscribers are notified when messages are stored"""
-        callback_called = []
-        
-        def test_callback(message_data, buffer):
-            callback_called.append((message_data, buffer))
-            
-        self.buffer.add_subscriber("test_subscriber", test_callback)
-        
-        mock_message = Mock()
-        mock_message.text = "Test message"
-        mock_message.chat_id = 123
-        mock_message.from_user.id = 456
-        mock_message.from_user.username = "testuser"
-        mock_message.from_user.first_name = "Test"
-        mock_message.message_id = 789
-        mock_message.date = Mock()
-        
-        target_groups = {123}
-        
-        with patch('messaging.message_buffer.create_message_data') as mock_create:
-            mock_create.return_value = {
-                "user": "testuser",
-                "user_id": 456,
-                "text": "Test message",
-                "timestamp": Mock(),
-                "message_id": 789,
-                "chat_id": 123,
-            }
-            
-            self.buffer.store_message(mock_message, target_groups)
-            
-        # Verify callback was called
-        self.assertEqual(len(callback_called), 1)
-        message_data, buffer = callback_called[0]
-        self.assertEqual(message_data["text"], "Test message")
-        self.assertIs(buffer, self.buffer)
-        
+
     def test_max_size_limit(self):
         """Test that buffer respects max_size limit"""
         target_groups = {123}
