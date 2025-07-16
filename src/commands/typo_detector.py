@@ -21,7 +21,6 @@ class TypoDetector(metaclass=Singleton):
         # minimum different users required to trigger (changed to 3 for more specificity)
         self._min_users = 3
         
-        # Log initialization for debugging
         logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, min users: {self._min_users}, Portuguese words: {len(self._portuguese_words)}")
         logging.info(f"TypoDetector setup complete and ready to process messages")
 
@@ -29,7 +28,7 @@ class TypoDetector(metaclass=Singleton):
         """Load Portuguese words from the word list file"""
         portuguese_words = set()
         try:
-            # Get the path to the data directory relative to this file
+            # get the path to the data directory relative to this file
             current_dir = os.path.dirname(os.path.abspath(__file__))
             root_dir = os.path.dirname(os.path.dirname(current_dir))
             words_file = os.path.join(root_dir, 'data', 'portuguese_words.txt')
