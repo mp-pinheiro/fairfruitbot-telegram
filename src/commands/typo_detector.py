@@ -23,6 +23,7 @@ class TypoDetector(metaclass=Singleton):
         
         # Log initialization for debugging
         logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, min users: {self._min_users}, Portuguese words: {len(self._portuguese_words)}")
+        logging.info(f"TypoDetector setup complete and ready to process messages")
 
     def _load_portuguese_words(self):
         """Load Portuguese words from the word list file"""
@@ -220,7 +221,7 @@ class TypoDetector(metaclass=Singleton):
 
         # only process messages from target groups
         if chat_id not in self._target_group_ids:
-            logging.debug(f"TypoDetector - ignoring message from chat {chat_id} (not in target groups: {list(self._target_group_ids)})")
+            logging.info(f"TypoDetector - ignoring message from chat {chat_id} (not in target groups: {list(self._target_group_ids)})")
             return
 
         try:
@@ -253,3 +254,4 @@ class TypoDetector(metaclass=Singleton):
     def setup(self, dispatcher):
         message_handler = MessageHandler(Filters.text & Filters.group, self._process)
         dispatcher.add_handler(message_handler)
+        logging.info("TypoDetector handler registered successfully")
