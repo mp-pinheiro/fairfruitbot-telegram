@@ -368,6 +368,69 @@ class TestTypoDetector(unittest.TestCase):
             detected_original = detector._detect_typo_pattern(msg3)
             self.assertIsNone(detected_original)
 
+    def test_naris_scenario_reproduction(self):
+        """Test the exact 'naris' scenario from the issue report"""
+        with patch.dict(
+            os.environ,
+            {"TELEGRAM_TOKEN": "test_token", "SUMMARY_GROUP_IDS": "-1001467780714"},
+        ):
+            # Clear singleton instance
+            if hasattr(TypoDetector, "_instances"):
+                TypoDetector._instances.clear()
+                
+            detector = TypoDetector()
+
+            # Create mock update and context for complete flow test
+            update = Mock()
+            context = Mock()
+
+            # Exact scenario from logs:
+            # 2025-07-16 14:29:25,721 - User1: bagulho já foi de naris pro fim do planeta
+            # 2025-07-16 14:29:40,849 - User2: naris  
+            # 2025-07-16 14:29:53,655 - User3: naris
+
+            # Message 1: "bagulho já foi de naris pro fim do planeta"
+            update.message.chat_id = -1001467780714
+            update.message.text = "bagulho já foi de naris pro fim do planeta"
+            update.message.from_user.username = "u1"
+            update.message.from_user.first_name = "User1"
+            update.message.from_user.id = 1
+            update.message.message_id = 100
+
+            detector._process(update, context)
+            context.bot.send_message.assert_not_called()
+
+            # Message 2: "naris"
+            update.message.text = "naris"
+            update.message.from_user.username = "u2" 
+            update.message.from_user.id = 2
+            update.message.message_id = 101
+
+            context.bot.send_message.reset_mock()
+            detector._process(update, context)
+            context.bot.send_message.assert_not_called()
+
+            # Message 3: "naris" - should trigger
+            update.message.text = "naris"
+            update.message.from_user.username = "u3"
+            update.message.from_user.id = 3
+            update.message.message_id = 102
+
+            context.bot.send_message.reset_mock()
+            detector._process(update, context)
+
+            # Should trigger on the third message
+            context.bot.send_message.assert_called_once_with(
+                chat_id=-1001467780714,
+                text="Pronto, proibido errar nesse grupo. 🤪",
+                reply_to_message_id=100,  # Reply to original message
+                parse_mode="HTML",
+            )
+
+            # Verify "naris" is detected as potential typo
+            self.assertIn("naris", detector._extract_potential_typos("naris"))
+            self.assertTrue(detector._is_potential_typo_word("naris"))
+
 
 if __name__ == "__main__":
     unittest.main()
