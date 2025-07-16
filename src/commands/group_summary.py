@@ -1,26 +1,29 @@
 import logging
+from collections import deque
 from telegram import ParseMode
 from telegram.ext import MessageHandler, Filters
 
 from clients import OpenAIClient
 from modules import Singleton
 from environment import Environment
-from messaging import BaseMessageBuffer, PrivacyManager
+from utils import create_message_data
 
 
-class GroupSummary(BaseMessageBuffer, metaclass=Singleton):
+class GroupSummary(metaclass=Singleton):
     def __init__(self):
         self._env = Environment()
-        self._target_group_ids = set(self._env.summary_group_ids)
-        super().__init__(max_size=100, target_group_ids=self._target_group_ids)
+        self._target_group_ids = self._env.summary_group_ids
         self._trigger_patterns = ["6 falam", "vcs falam", "ces falam", "6️⃣"]
         self._openai_client = OpenAIClient()
-        self._privacy_manager = PrivacyManager()
+        # store recent messages from the target groups
+        self._message_buffer = deque(maxlen=100)
 
     def _should_trigger(self, message_text, chat_id):
+        # check if it's one of the target groups
         if chat_id not in self._target_group_ids:
             return False
 
+        # check if message contains any trigger patterns
         message_lower = message_text.lower()
         for pattern in self._trigger_patterns:
             if pattern.lower() in message_lower:
@@ -29,96 +32,71 @@ class GroupSummary(BaseMessageBuffer, metaclass=Singleton):
         return False
 
     def _store_message(self, message):
-        try:
-            return self.store_message(message)
-        except Exception as e:
-            logging.error(f"Failed to store message: {e}")
-            raise
+        if message.chat_id in self._target_group_ids and message.text:
+            try:
+                message_data = create_message_data(message)
+                # GroupSummary only needs user, text, and timestamp
+                simplified_data = {
+                    "user": message_data["user"],
+                    "text": message_data["text"],
+                    "timestamp": message_data["timestamp"],
+                }
+                self._message_buffer.append(simplified_data)
+            except Exception as e:
+                logging.error(f"Failed to store message: {e}")
+                # re-raise to let caller know storage failed
+                raise
 
     def _get_recent_messages(self, limit=100):
         try:
-            # Use inherited buffer to get recent messages, filtered to exclude trigger patterns
-            all_messages = self.get_recent_messages(limit=limit)
-            
-            # Filter out trigger patterns
-            filtered_messages = []
-            for msg_data in all_messages:
+            if not self._message_buffer:
+                return ["[Nenhuma mensagem recente disponível]"]
+
+            # convert stored messages to text format for summarization
+            messages = []
+            for msg_data in list(self._message_buffer)[-limit:]:
+                # filter out messages that contain trigger patterns
                 message_text = msg_data["text"].lower()
-                is_trigger = any(
+                contains_trigger = any(
                     pattern.lower() in message_text
                     for pattern in self._trigger_patterns
                 )
-                if not is_trigger:
-                    filtered_messages.append(msg_data)
-            
-            if not filtered_messages:
-                return [], []
 
-            # separate usernames and message texts for privacy processing
-            usernames = set()
-            message_texts = []
-            formatted_messages = []
-            
-            for msg_data in filtered_messages:
-                username = msg_data['user']
-                text = msg_data['text']
-                usernames.add(username)
-                message_texts.append(text)
-                # Store the original format for later anonymization
-                formatted_messages.append((username, text))
+                if not contains_trigger:
+                    formatted_msg = f"{msg_data['user']}: {msg_data['text']}"
+                    messages.append(formatted_msg)
 
-            return formatted_messages, message_texts
+            return messages
 
         except Exception as e:
             logging.error(f"Error getting recent messages: {e}")
-            return [], []
+            return ["[Erro ao recuperar mensagens]"]
 
-    def _summarize_messages(self, formatted_messages, message_texts):
+    def _summarize_messages(self, messages):
         try:
-            if not formatted_messages:
-                return "Não foi possível gerar um resumo."
-                
-            # Extract usernames for privacy session
-            usernames = {username for username, _ in formatted_messages}
-            
-            # Use privacy session for secure anonymization
-            with self._privacy_manager.create_privacy_session(usernames, message_texts) as session:
-                # anonymize messages for LLM call
-                anonymized_messages = []
-                for username, text in formatted_messages:
-                    anonymous_username = session.get_anonymous_username(username)
-                    # also anonymize any usernames mentioned in text content
-                    anonymous_text = session.anonymize_text(text)
-                    formatted_msg = f"{anonymous_username}: {anonymous_text}"
-                    anonymized_messages.append(formatted_msg)
-                
-                # prepare the conversation context for OpenAI
-                messages_text = "\n".join(anonymized_messages)
+            # prepare the conversation context for OpenAI
+            messages_text = "\n".join(messages)
 
-                system_prompt = (
-                    "Você é um assistente que resume conversas em português brasileiro. "
-                    "Crie um resumo conciso e natural do que foi discutido, "
-                    "focando nos principais tópicos e pontos importantes. "
-                    "Mantenha o resumo breve e informativo. "
-                    "NÃO comece o resumo com 'Resumo da conversa' ou similar."
-                )
+            system_prompt = (
+                "Você é um assistente que resume conversas em português brasileiro. "
+                "Crie um resumo conciso e natural do que foi discutido, "
+                "focando nos principais tópicos e pontos importantes. "
+                "Mantenha o resumo breve e informativo. "
+                "NÃO comece o resumo com 'Resumo da conversa' ou similar."
+            )
 
-                user_prompt = f"Resuma esta conversa em português:\n\n{messages_text}"
+            user_prompt = f"Resuma esta conversa em português:\n\n{messages_text}"
 
-                openai_messages = [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ]
+            openai_messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ]
 
-                summary = self._openai_client.make_request(
-                    messages=openai_messages, max_tokens=300
-                )
+            summary = self._openai_client.make_request(
+                messages=openai_messages, max_tokens=300
+            )
 
-                # deanonymize the response to restore real usernames
-                if summary:
-                    summary = session.deanonymize_text(summary)
-
-                return summary.strip() if summary else "Não foi possível gerar um resumo."
+            return summary.strip() if summary else "Não foi possível gerar um resumo."
 
         except Exception as e:
             logging.error(f"Error summarizing messages: {e}")
@@ -154,10 +132,10 @@ class GroupSummary(BaseMessageBuffer, metaclass=Singleton):
 
         try:
             # get recent messages from our buffer
-            formatted_messages, message_texts = self._get_recent_messages()
+            recent_messages = self._get_recent_messages()
 
             # skip if we don't have enough messages
-            if len(formatted_messages) < 5:
+            if len(recent_messages) < 5:
                 context.bot.send_message(
                     chat_id=chat_id,
                     text="6️⃣ falam eim! Mas ainda não tenho mensagens suficientes para resumir.",
@@ -166,7 +144,7 @@ class GroupSummary(BaseMessageBuffer, metaclass=Singleton):
                 return
 
             # generate summary
-            summary = self._summarize_messages(formatted_messages, message_texts)
+            summary = self._summarize_messages(recent_messages)
 
             # send response
             response_text = (
