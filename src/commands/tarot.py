@@ -2,7 +2,7 @@ import difflib
 import random
 from datetime import datetime
 
-from telegram.constants import ParseMode
+from telegram import ParseMode
 
 from commands import Command
 from fetchers import TarotFetcher

@@ -1,21 +1,21 @@
 import logging
-from telegram.constants import ParseMode
+from telegram import ParseMode
 from telegram.ext import MessageHandler, Filters
 
 from clients import OpenAIClient
 from modules import Singleton
 from environment import Environment
-from messaging import get_shared_message_buffer, PrivacyManager
+from messaging import BaseMessageBuffer, PrivacyManager
 
 
-class GroupSummary(metaclass=Singleton):
+class GroupSummary(BaseMessageBuffer, metaclass=Singleton):
     def __init__(self):
         self._env = Environment()
         self._target_group_ids = set(self._env.summary_group_ids)
+        # Initialize BaseMessageBuffer with optimal size for group summary (100 messages)
+        super().__init__(max_size=100, target_group_ids=self._target_group_ids)
         self._trigger_patterns = ["6 falam", "vcs falam", "ces falam", "6️⃣"]
         self._openai_client = OpenAIClient()
-        # use shared message buffer instance
-        self._message_buffer = get_shared_message_buffer()
         # privacy manager for anonymizing usernames in LLM calls
         self._privacy_manager = PrivacyManager()
 
@@ -33,9 +33,9 @@ class GroupSummary(metaclass=Singleton):
         return False
 
     def _store_message(self, message):
-        """Store message data using shared buffer"""
+        """Store message data using inherited buffer"""
         try:
-            return self._message_buffer.store_message(message, self._target_group_ids)
+            return self.store_message(message)
         except Exception as e:
             logging.error(f"Failed to store message: {e}")
             # re-raise to let caller know storage failed
@@ -43,18 +43,19 @@ class GroupSummary(metaclass=Singleton):
 
     def _get_recent_messages(self, limit=100):
         try:
-            # Use shared buffer to get recent messages, filtered to exclude trigger patterns
-            def filter_non_triggers(msg_data):
+            # Use inherited buffer to get recent messages, filtered to exclude trigger patterns
+            all_messages = self.get_recent_messages(limit=limit)
+            
+            # Filter out trigger patterns
+            filtered_messages = []
+            for msg_data in all_messages:
                 message_text = msg_data["text"].lower()
-                return not any(
+                is_trigger = any(
                     pattern.lower() in message_text
                     for pattern in self._trigger_patterns
                 )
-                
-            filtered_messages = self._message_buffer.get_recent_messages(
-                limit=limit, 
-                filter_func=filter_non_triggers
-            )
+                if not is_trigger:
+                    filtered_messages.append(msg_data)
             
             if not filtered_messages:
                 return [], []

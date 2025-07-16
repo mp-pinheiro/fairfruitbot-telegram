@@ -1,5 +1,5 @@
 from fetchers import NewsFetcher
-from telegram.constants import ParseMode
+from telegram import ParseMode
 from telegram.ext import CommandHandler
 from utils import get_date
 

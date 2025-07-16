@@ -2,20 +2,20 @@ import logging
 import re
 import os
 from collections import defaultdict
-from telegram.constants import ParseMode
+from telegram import ParseMode
 from telegram.ext import MessageHandler, Filters
 
 from modules import Singleton
 from environment import Environment
-from messaging import get_shared_message_buffer
+from messaging import BaseMessageBuffer
 
 
-class TypoDetector(metaclass=Singleton):
+class TypoDetector(BaseMessageBuffer, metaclass=Singleton):
     def __init__(self):
         self._env = Environment()
         self._target_group_ids = set(self._env.summary_group_ids)
-        # use shared message buffer instance
-        self._message_buffer = get_shared_message_buffer()
+        # Initialize BaseMessageBuffer with optimal size for typo detection (50 messages)
+        super().__init__(max_size=50, target_group_ids=self._target_group_ids)
         # load Portuguese words for filtering
         self._portuguese_words = self._load_portuguese_words()
         # minimum different users required to trigger (changed to 3 for more specificity)
@@ -132,9 +132,9 @@ class TypoDetector(metaclass=Singleton):
         return True
 
     def _store_message(self, message):
-        """Store message data for typo detection using shared buffer"""
+        """Store message data for typo detection using inherited buffer"""
         try:
-            return self._message_buffer.store_message(message, self._target_group_ids)
+            return self.store_message(message)
         except Exception as e:
             logging.error(f"Failed to store message: {e}")
             raise
@@ -163,7 +163,7 @@ class TypoDetector(metaclass=Singleton):
             has_full_message = False     # typo as the full message
 
             # search through recent messages in chronological order
-            recent_messages = self._message_buffer.get_recent_messages()
+            recent_messages = self.get_recent_messages()
             for msg_data in recent_messages:
                 msg_typos = self._extract_potential_typos(msg_data["text"])
                 

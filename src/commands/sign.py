@@ -1,6 +1,6 @@
 import difflib
 
-from telegram.constants import ParseMode
+from telegram import ParseMode
 
 from commands import Command
 from fetchers import SignFetcher
