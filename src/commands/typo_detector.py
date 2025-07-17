@@ -20,8 +20,10 @@ class TypoDetector(metaclass=Singleton):
         self._portuguese_words = self._load_portuguese_words()
         # minimum different users required to trigger (reduced to 2 for better detection)
         self._min_users = 2
-        
-        logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, min users: {self._min_users}, Portuguese words: {len(self._portuguese_words)}")
+
+        logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, "
+                     f"min users: {self._min_users}, "
+                     f"Portuguese words: {len(self._portuguese_words)}")
         logging.info(f"TypoDetector setup complete and ready to process messages")
 
     def _load_portuguese_words(self):
@@ -32,7 +34,6 @@ class TypoDetector(metaclass=Singleton):
             current_dir = os.path.dirname(os.path.abspath(__file__))
             root_dir = os.path.dirname(os.path.dirname(current_dir))
             words_file = os.path.join(root_dir, 'data', 'portuguese_words.txt')
-            
             if os.path.exists(words_file):
                 with open(words_file, 'r', encoding='utf-8') as f:
                     for line in f:
@@ -44,7 +45,7 @@ class TypoDetector(metaclass=Singleton):
                 logging.warning(f"Portuguese words file not found at {words_file}")
         except Exception as e:
             logging.error(f"Error loading Portuguese words: {e}")
-        
+
         return portuguese_words
 
     def _extract_potential_typos(self, message_text):
@@ -139,12 +140,12 @@ class TypoDetector(metaclass=Singleton):
         """
         Detect if the current message contains a typo that's part of a repetition pattern
         Returns the original message if pattern detected, None otherwise
-        
+
         Pattern: requires minimum different users repeating the same typo
         """
         # extract potential typos from current message
         current_typos = self._extract_potential_typos(current_message.text)
-        
+
         if not current_typos:
             return None
 
@@ -157,7 +158,7 @@ class TypoDetector(metaclass=Singleton):
             # search through recent messages in chronological order
             for msg_data in list(self._message_buffer):
                 msg_typos = self._extract_potential_typos(msg_data["text"])
-                
+
                 if typo in msg_typos:
                     different_users.add(msg_data["user_id"])
 
@@ -180,16 +181,19 @@ class TypoDetector(metaclass=Singleton):
             return
 
         chat_id = message.chat_id
-        
+
         try:
-            user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
-            logging.info(f"TypoDetector - chat: {chat_id} - user: {user_info} - text: {message.text}")
+            user_info = (f"({message.from_user.id}) "
+                         f"{message.from_user.username or message.from_user.full_name}")
+            logging.info(f"TypoDetector - chat: {chat_id} - user: {user_info} - "
+                         f"text: {message.text}")
         except Exception:
             logging.info(f"TypoDetector - chat: {chat_id} - text: {message.text}")
 
         # only process messages from target groups
         if chat_id not in self._target_group_ids:
-            logging.info(f"TypoDetector - ignoring message from chat {chat_id} (not in target groups: {list(self._target_group_ids)})")
+            logging.info(f"TypoDetector - ignoring message from chat {chat_id} "
+                         f"(not in target groups: {list(self._target_group_ids)})")
             return
 
         try:
