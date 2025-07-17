@@ -41,13 +41,13 @@ def test_typo_detector_initialization():
         'SUMMARY_GROUP_IDS': '-1001467780714'
     }):
         detector = TypoDetector()
-        assert detector._min_users == 3
+        assert detector._min_users == 2
         assert -1001467780714 in detector._target_group_ids
         assert len(detector._message_buffer) == 0
 
 
 def test_typo_detector_fazedo_case():
-    """Test the 'fazedo' case from the issue - should trigger with 3 users"""
+    """Test the 'fazedo' case from the issue - should trigger with 2+ users"""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'SUMMARY_GROUP_IDS': '-1001467780714'
@@ -79,24 +79,31 @@ def test_typo_detector_fazedo_case():
         update4 = create_mock_update(msg4)
         detector._process(update4, context)
         
-        # User3: "fazedo" - this should trigger
+        # User3: "fazedo" - this should trigger (2 users: 1, 3)
         msg5 = create_mock_message(user_id=3, text="fazedo", message_id=5)
         update5 = create_mock_update(msg5)
         detector._process(update5, context)
         
-        # Should trigger here - we have 3 users (1, 3) with "fazedo"
-        # User1 used it in longer message, User3 used it as full message
+        # Should trigger once here - we have 2 users (1, 3) with "fazedo"
         assert context.bot.send_message.call_count == 1
         
-        # Check the call arguments
-        call_args = context.bot.send_message.call_args
-        assert call_args[1]['chat_id'] == -1001467780714
-        assert "proibido errar" in call_args[1]['text']
-        assert call_args[1]['reply_to_message_id'] == 1  # Reply to original message
+        # User2: "Fazedo" - this should trigger again (3 users: 1, 2, 3)
+        msg6 = create_mock_message(user_id=2, text="Fazedo", message_id=6)
+        update6 = create_mock_update(msg6)
+        detector._process(update6, context)
+        
+        # Should trigger twice total - once for 2 users, once for 3 users
+        assert context.bot.send_message.call_count == 2
+        
+        # Check the first call arguments
+        first_call_args = context.bot.send_message.call_args_list[0]
+        assert first_call_args[1]['chat_id'] == -1001467780714
+        assert "proibido errar" in first_call_args[1]['text']
+        assert first_call_args[1]['reply_to_message_id'] == 1  # Reply to original message
 
 
 def test_typo_detector_tendeyu_case():
-    """Test the 'tendeyu' case from the issue - should not trigger with only 2 users"""
+    """Test the 'tendeyu' case from the issue - should trigger with 2 users"""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'SUMMARY_GROUP_IDS': '-1001467780714'
@@ -118,13 +125,19 @@ def test_typo_detector_tendeyu_case():
         update2 = create_mock_update(msg2)
         detector._process(update2, context)
         
-        # User1: "tendeyu"
+        # User1: "tendeyu" - should trigger with 2 users
         msg3 = create_mock_message(user_id=1, text="tendeyu", message_id=3)
         update3 = create_mock_update(msg3)
         detector._process(update3, context)
         
-        # Should not trigger - only 2 users (1, 2) but needs 3
-        assert context.bot.send_message.call_count == 0
+        # Should trigger with 2 users
+        assert context.bot.send_message.call_count == 1
+        
+        # Check the call arguments
+        call_args = context.bot.send_message.call_args
+        assert call_args[1]['chat_id'] == -1001467780714
+        assert "proibido errar" in call_args[1]['text']
+        assert call_args[1]['reply_to_message_id'] == 1  # Reply to original message
 
 
 def test_typo_detector_extract_potential_typos():

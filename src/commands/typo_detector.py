@@ -18,8 +18,8 @@ class TypoDetector(metaclass=Singleton):
         self._message_buffer = deque(maxlen=50)
         # load Portuguese words for filtering
         self._portuguese_words = self._load_portuguese_words()
-        # minimum different users required to trigger (changed to 3 for more specificity)
-        self._min_users = 3
+        # minimum different users required to trigger (reduced to 2 for better detection)
+        self._min_users = 2
         
         logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, min users: {self._min_users}, Portuguese words: {len(self._portuguese_words)}")
         logging.info(f"TypoDetector setup complete and ready to process messages")
@@ -59,16 +59,7 @@ class TypoDetector(metaclass=Singleton):
         text = message_text.strip().lower()
         potential_typos = set()  # use set to avoid duplicates
 
-        # if the entire message is short, check if it's a potential typo
-        if len(text) <= 20:
-            words = text.split()
-            if len(words) <= 2:
-                # Clean the entire text for potential typo check
-                cleaned_text = re.sub(r'^[^\w]+|[^\w]+$', '', text)
-                if self._is_potential_typo_word(cleaned_text):
-                    potential_typos.add(cleaned_text)
-
-        # also check individual words in longer messages
+        # check individual words for potential typos
         words = text.split()
         for word in words:
             if self._is_potential_typo_word(word):
@@ -149,9 +140,7 @@ class TypoDetector(metaclass=Singleton):
         Detect if the current message contains a typo that's part of a repetition pattern
         Returns the original message if pattern detected, None otherwise
         
-        New pattern: requires 3 different users with specific conditions:
-        - At least one occurrence as part of a longer message (original context)
-        - At least one occurrence as the full message (≤ 2 words)
+        Pattern: requires minimum different users repeating the same typo
         """
         # extract potential typos from current message
         current_typos = self._extract_potential_typos(current_message.text)
@@ -164,8 +153,6 @@ class TypoDetector(metaclass=Singleton):
             # look for this typo in recent messages (including current)
             original_msg = None
             different_users = set()
-            has_part_of_message = False  # typo as part of longer message
-            has_full_message = False     # typo as the full message
 
             # search through recent messages in chronological order
             for msg_data in list(self._message_buffer):
@@ -177,29 +164,12 @@ class TypoDetector(metaclass=Singleton):
                     # store the earliest occurrence as original
                     if original_msg is None:
                         original_msg = msg_data
-                    
-                    # check message context
-                    words = msg_data["text"].strip().split()
-                    if len(words) <= 2:
-                        has_full_message = True
-                    else:
-                        has_part_of_message = True
 
             # also check the current message
             different_users.add(current_message.from_user.id)
-            current_words = current_message.text.strip().split()
-            if len(current_words) <= 2:
-                has_full_message = True
-            else:
-                has_part_of_message = True
 
-            # pattern detected if:
-            # 1. Same word appears by 3 different users
-            # 2. At least one occurrence is part of a longer message
-            # 3. At least one occurrence is the full message
-            if (len(different_users) >= 3 and 
-                has_part_of_message and 
-                has_full_message):
+            # pattern detected if same typo appears by minimum different users
+            if len(different_users) >= self._min_users:
                 return original_msg
 
         return None
