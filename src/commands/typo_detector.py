@@ -18,12 +18,10 @@ class TypoDetector(metaclass=Singleton):
         self._message_buffer = deque(maxlen=50)
         # load Portuguese words for filtering
         self._portuguese_words = self._load_portuguese_words()
-        # minimum different users required to trigger (reduced to 2 for better detection)
-        self._min_users = 2
-
-        logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, "
-                     f"min users: {self._min_users}, "
-                     f"Portuguese words: {len(self._portuguese_words)}")
+        # minimum different users required to trigger (changed to 3 for more specificity)
+        self._min_users = 3
+        
+        logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, min users: {self._min_users}, Portuguese words: {len(self._portuguese_words)}")
         logging.info(f"TypoDetector setup complete and ready to process messages")
 
     def _load_portuguese_words(self):
@@ -34,6 +32,7 @@ class TypoDetector(metaclass=Singleton):
             current_dir = os.path.dirname(os.path.abspath(__file__))
             root_dir = os.path.dirname(os.path.dirname(current_dir))
             words_file = os.path.join(root_dir, 'data', 'portuguese_words.txt')
+            
             if os.path.exists(words_file):
                 with open(words_file, 'r', encoding='utf-8') as f:
                     for line in f:
@@ -45,7 +44,7 @@ class TypoDetector(metaclass=Singleton):
                 logging.warning(f"Portuguese words file not found at {words_file}")
         except Exception as e:
             logging.error(f"Error loading Portuguese words: {e}")
-
+        
         return portuguese_words
 
     def _extract_potential_typos(self, message_text):
@@ -60,7 +59,17 @@ class TypoDetector(metaclass=Singleton):
         text = message_text.strip().lower()
         potential_typos = set()  # use set to avoid duplicates
 
-        # check individual words for potential typos
+        # if the entire message is short, check if it's a potential typo
+        if len(text) <= 20:
+            words = text.split()
+            if len(words) <= 2:
+                # Clean the entire text for potential typo check
+                cleaned_text = re.sub(r'^[^\w]+|[^\w]+$', '', text)
+                if self._is_potential_typo_word(cleaned_text):
+                    potential_typos.add(cleaned_text)
+                    logging.debug(f"TypoDetector - extracted full message typo: '{cleaned_text}' from '{message_text}'")
+
+        # also check individual words in longer messages
         words = text.split()
         for word in words:
             if self._is_potential_typo_word(word):
@@ -68,8 +77,12 @@ class TypoDetector(metaclass=Singleton):
                 cleaned_word = re.sub(r'^[^\w]+|[^\w]+$', '', word.strip().lower())
                 if cleaned_word:
                     potential_typos.add(cleaned_word)
+                    logging.debug(f"TypoDetector - extracted individual word typo: '{cleaned_word}' from '{message_text}'")
 
-        return list(potential_typos)
+        result = list(potential_typos)
+        if result:
+            logging.debug(f"TypoDetector - total potential typos extracted from '{message_text}': {result}")
+        return result
 
     def _is_potential_typo_word(self, word):
         """
@@ -132,6 +145,7 @@ class TypoDetector(metaclass=Singleton):
             try:
                 message_data = create_message_data(message)
                 self._message_buffer.append(message_data)
+                logging.info(f"TypoDetector - stored message from user {message_data['user_id']}: '{message_data['text']}' (buffer size: {len(self._message_buffer)})")
             except Exception as e:
                 logging.error(f"Failed to store message: {e}")
                 raise
@@ -140,38 +154,73 @@ class TypoDetector(metaclass=Singleton):
         """
         Detect if the current message contains a typo that's part of a repetition pattern
         Returns the original message if pattern detected, None otherwise
-
-        Pattern: requires minimum different users repeating the same typo
+        
+        New pattern: requires 3 different users with specific conditions:
+        - At least one occurrence as part of a longer message (original context)
+        - At least one occurrence as the full message (≤ 2 words)
         """
         # extract potential typos from current message
         current_typos = self._extract_potential_typos(current_message.text)
-
+        
+        logging.info(f"TypoDetector - current message '{current_message.text}' has potential typos: {current_typos}")
+        
         if not current_typos:
             return None
 
         # check each potential typo for repetition patterns
         for typo in current_typos:
+            logging.info(f"TypoDetector - checking typo pattern for: '{typo}'")
+            
             # look for this typo in recent messages (including current)
             original_msg = None
             different_users = set()
+            has_part_of_message = False  # typo as part of longer message
+            has_full_message = False     # typo as the full message
 
             # search through recent messages in chronological order
             for msg_data in list(self._message_buffer):
                 msg_typos = self._extract_potential_typos(msg_data["text"])
-
+                
                 if typo in msg_typos:
                     different_users.add(msg_data["user_id"])
 
                     # store the earliest occurrence as original
                     if original_msg is None:
                         original_msg = msg_data
+                    
+                    # check message context - important: check if the typo is the ENTIRE message
+                    # (not just <= 2 words, but actually the cleaned text equals the typo)
+                    cleaned_text = re.sub(r'^[^\w]+|[^\w]+$', '', msg_data["text"].strip().lower())
+                    if cleaned_text == typo:
+                        has_full_message = True
+                        logging.info(f"TypoDetector - found '{typo}' as FULL MESSAGE in: '{msg_data['text']}' by user {msg_data['user_id']}")
+                    else:
+                        has_part_of_message = True
+                        logging.info(f"TypoDetector - found '{typo}' as PART OF MESSAGE in: '{msg_data['text']}' by user {msg_data['user_id']}")
 
             # also check the current message
             different_users.add(current_message.from_user.id)
+            current_cleaned_text = re.sub(r'^[^\w]+|[^\w]+$', '', current_message.text.strip().lower())
+            if current_cleaned_text == typo:
+                has_full_message = True
+                logging.info(f"TypoDetector - current message '{current_message.text}' has '{typo}' as FULL MESSAGE by user {current_message.from_user.id}")
+            else:
+                has_part_of_message = True
+                logging.info(f"TypoDetector - current message '{current_message.text}' has '{typo}' as PART OF MESSAGE by user {current_message.from_user.id}")
 
-            # pattern detected if same typo appears by minimum different users
-            if len(different_users) >= self._min_users:
+            logging.info(f"TypoDetector - typo '{typo}' analysis: users={sorted(different_users)}, has_part_of_message={has_part_of_message}, has_full_message={has_full_message}")
+
+            # pattern detected if:
+            # 1. Same word appears by 3 different users
+            # 2. At least one occurrence is part of a longer message
+            # 3. At least one occurrence is the full message
+            if (len(different_users) >= 3 and 
+                has_part_of_message and 
+                has_full_message):
+                logging.info(f"TypoDetector - PATTERN DETECTED for '{typo}' - triggering response!")
                 return original_msg
+            else:
+                logging.info(f"TypoDetector - pattern NOT detected for '{typo}' - need: 3+ users ({len(different_users)} found), part_of_message ({has_part_of_message}), full_message ({has_full_message})")
 
         return None
 
@@ -181,19 +230,16 @@ class TypoDetector(metaclass=Singleton):
             return
 
         chat_id = message.chat_id
-
+        
         try:
-            user_info = (f"({message.from_user.id}) "
-                         f"{message.from_user.username or message.from_user.full_name}")
-            logging.info(f"TypoDetector - chat: {chat_id} - user: {user_info} - "
-                         f"text: {message.text}")
+            user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
+            logging.info(f"TypoDetector - chat: {chat_id} - user: {user_info} - text: {message.text}")
         except Exception:
             logging.info(f"TypoDetector - chat: {chat_id} - text: {message.text}")
 
         # only process messages from target groups
         if chat_id not in self._target_group_ids:
-            logging.info(f"TypoDetector - ignoring message from chat {chat_id} "
-                         f"(not in target groups: {list(self._target_group_ids)})")
+            logging.info(f"TypoDetector - ignoring message from chat {chat_id} (not in target groups: {list(self._target_group_ids)})")
             return
 
         try:
