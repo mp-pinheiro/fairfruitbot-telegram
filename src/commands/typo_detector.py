@@ -18,8 +18,8 @@ class TypoDetector(metaclass=Singleton):
         self._message_buffer = deque(maxlen=50)
         # load Portuguese words for filtering
         self._portuguese_words = self._load_portuguese_words()
-        # minimum different users required to trigger (changed to 3 for more specificity)
-        self._min_users = 3
+        # minimum different users required to trigger (set to 2 for better responsiveness)
+        self._min_users = 2
         
         logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, min users: {self._min_users}, Portuguese words: {len(self._portuguese_words)}")
         logging.info(f"TypoDetector setup complete and ready to process messages")
@@ -97,8 +97,8 @@ class TypoDetector(metaclass=Singleton):
         if not word:
             return False
 
-        # ignore very short words (1-2 chars) unless they look like typos
-        if len(word) <= 2:
+        # ignore very short words (1 char) unless they look like typos
+        if len(word) <= 1:
             return False
 
         # ignore very long words (unlikely to be simple typos)
@@ -106,7 +106,9 @@ class TypoDetector(metaclass=Singleton):
             return False
 
         # ignore Portuguese words using the loaded word list
-        if word in self._portuguese_words:
+        # BUT allow certain words that are commonly repeated as typos/patterns
+        allowed_portuguese_words = {"me", "te", "se", "la", "da", "do", "em", "um", "ou"}
+        if word in self._portuguese_words and word not in allowed_portuguese_words:
             return False
 
         # ignore basic common words that might not be in the Portuguese list
@@ -211,16 +213,14 @@ class TypoDetector(metaclass=Singleton):
             logging.info(f"TypoDetector - typo '{typo}' analysis: users={sorted(different_users)}, has_part_of_message={has_part_of_message}, has_full_message={has_full_message}")
 
             # pattern detected if:
-            # 1. Same word appears by 3 different users
-            # 2. At least one occurrence is part of a longer message
-            # 3. At least one occurrence is the full message
-            if (len(different_users) >= 3 and 
-                has_part_of_message and 
-                has_full_message):
+            # 1. Same word appears by min_users different users
+            # 2. At least one occurrence is part of a longer message OR at least one occurrence is the full message
+            if (len(different_users) >= self._min_users and 
+                (has_part_of_message or has_full_message)):
                 logging.info(f"TypoDetector - PATTERN DETECTED for '{typo}' - triggering response!")
                 return original_msg
             else:
-                logging.info(f"TypoDetector - pattern NOT detected for '{typo}' - need: 3+ users ({len(different_users)} found), part_of_message ({has_part_of_message}), full_message ({has_full_message})")
+                logging.info(f"TypoDetector - pattern NOT detected for '{typo}' - need: {self._min_users}+ users ({len(different_users)} found), (part_of_message ({has_part_of_message}) OR full_message ({has_full_message}))")
 
         return None
 
