@@ -1,6 +1,5 @@
 import logging
 import re
-import os
 from collections import deque, defaultdict
 from telegram import ParseMode
 from telegram.ext import MessageHandler, Filters
@@ -8,6 +7,7 @@ from telegram.ext import MessageHandler, Filters
 from modules import Singleton
 from environment import Environment
 from utils import create_message_data
+from clients.openai_client import OpenAIClient
 
 
 class TypoDetector(metaclass=Singleton):
@@ -16,226 +16,174 @@ class TypoDetector(metaclass=Singleton):
         self._target_group_ids = self._env.summary_group_ids
         # store recent messages from the target groups
         self._message_buffer = deque(maxlen=50)
-        # load Portuguese words for filtering
-        self._portuguese_words = self._load_portuguese_words()
-        # minimum different users required to trigger (changed to 3 for more specificity)
+        # minimum different users required to trigger
         self._min_users = 3
+        # OpenAI client for typo validation
+        self._openai_client = OpenAIClient()
         
-        logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, min users: {self._min_users}, Portuguese words: {len(self._portuguese_words)}")
+        logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, min users: {self._min_users}")
         logging.info(f"TypoDetector setup complete and ready to process messages")
 
-    def _load_portuguese_words(self):
-        """Load Portuguese words from the word list file"""
-        portuguese_words = set()
-        try:
-            # get the path to the data directory relative to this file
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            root_dir = os.path.dirname(os.path.dirname(current_dir))
-            words_file = os.path.join(root_dir, 'data', 'portuguese_words.txt')
-            
-            if os.path.exists(words_file):
-                with open(words_file, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        word = line.strip().lower()
-                        if word:
-                            portuguese_words.add(word)
-                logging.info(f"Loaded {len(portuguese_words)} Portuguese words for filtering")
-            else:
-                logging.warning(f"Portuguese words file not found at {words_file}")
-        except Exception as e:
-            logging.error(f"Error loading Portuguese words: {e}")
-        
-        return portuguese_words
-
-    def _extract_potential_typos(self, message_text):
-        """
-        Extract potential typos from a message.
-        Returns a list of potential typos found in the message.
-        """
+    def _extract_words(self, message_text):
         if not message_text:
             return []
 
-        # clean text
+        # clean text and extract words
         text = message_text.strip().lower()
-        potential_typos = set()  # use set to avoid duplicates
+        # remove punctuation from start/end of words
+        words = re.findall(r'\b\w+\b', text)
+        
+        # filter out very short words (less than 3 characters)
+        words = [word for word in words if len(word) >= 3]
+        
+        logging.debug(f"TypoDetector - extracted words from '{message_text}': {words}")
+        return words
 
-        # if the entire message is short, check if it's a potential typo
-        if len(text) <= 20:
-            words = text.split()
-            if len(words) <= 2:
-                # Clean the entire text for potential typo check
-                cleaned_text = re.sub(r'^[^\w]+|[^\w]+$', '', text)
-                if self._is_potential_typo_word(cleaned_text):
-                    potential_typos.add(cleaned_text)
-                    logging.debug(f"TypoDetector - extracted full message typo: '{cleaned_text}' from '{message_text}'")
+    def _is_typo_via_gpt(self, word, context_messages):
+        try:
+            # Create examples and context for the prompt
+            examples = [
+                "User says 'me' repeatedly → Actually meant 'né' (Brazilian Portuguese for 'right?')",
+                "User says 'casa' repeatedly → Actually meant 'cada' (each instead of house)",
+                "User says 'fazedo' repeatedly → Actually meant 'fazendo' (doing)",
+                "User says 'mudno' repeatedly → Actually meant 'mundo' (world)",
+                "User says 'tendeyu' repeatedly → Actually meant 'entendeu' (understood)"
+            ]
+            
+            # Build context from recent messages
+            context = "\n".join([f"User {msg['user_id']}: {msg['text']}" for msg in context_messages[-5:]])
+            
+            messages = [
+                {
+                    "role": "system",
+                    "content": f"""You are a typo detector for Brazilian Portuguese. Analyze if a word being repeated by multiple users is likely a typo or intentional repetition.
 
-        # also check individual words in longer messages
-        words = text.split()
-        for word in words:
-            if self._is_potential_typo_word(word):
-                # Add the cleaned version of the word (punctuation removed)
-                cleaned_word = re.sub(r'^[^\w]+|[^\w]+$', '', word.strip().lower())
-                if cleaned_word:
-                    potential_typos.add(cleaned_word)
-                    logging.debug(f"TypoDetector - extracted individual word typo: '{cleaned_word}' from '{message_text}'")
+Examples of common typos:
+{chr(10).join(examples)}
 
-        result = list(potential_typos)
-        if result:
-            logging.debug(f"TypoDetector - total potential typos extracted from '{message_text}': {result}")
-        return result
+Respond with only "YES" if it's likely a typo, or "NO" if it's intentional repetition or a real word being used correctly."""
+                },
+                {
+                    "role": "user", 
+                    "content": f"""Word being repeated: "{word}"
 
-    def _is_potential_typo_word(self, word):
-        """
-        Determine if a single word could be a typo.
-        """
-        # clean word and remove punctuation
-        word = word.strip().lower()
-        # Remove common punctuation from the end/beginning of words
-        word = re.sub(r'^[^\w]+|[^\w]+$', '', word)
+Recent conversation context:
+{context}
 
-        # ignore empty words
-        if not word:
-            return False
-
-        # ignore very short words (1-2 chars) unless they look like typos
-        if len(word) <= 2:
-            return False
-
-        # ignore very long words (unlikely to be simple typos)
-        if len(word) > 15:
-            return False
-
-        # ignore Portuguese words using the loaded word list
-        if word in self._portuguese_words:
-            return False
-
-        # ignore basic common words that might not be in the Portuguese list
-        basic_common_words = {
-            "sim", "não", "nao", "ok", "oi", "tchau", "obrigado", "obrigada",
-            "valeu", "kkkk", "kkk", "rsrs", "haha", "hehe", "top", "legal",
-            "massa", "show", "blz", "beleza", "pqp", "mano", "cara", "né", "ne",
-            # Common English words that might appear in mixed messages
-            "the", "and", "but", "you", "are", "can", "get", "all", "new", "now",
-            "old", "see", "him", "her", "its", "our", "out", "day", "way", "use",
-            "man", "may", "say", "she", "how", "who", "oil", "sit", "set", "run",
-            "eat", "far", "sea", "eye", "was", "boy", "girl", "this", "is", "a",
-            "very", "long", "message", "that", "should", "not", "be", "considered", "typo"
-        }
-
-        if word in basic_common_words:
-            return False
-
-        # ignore repeated character patterns like "kkkkk", "hahaha", etc.
-        if len(word) >= 3 and len(set(word)) <= 2:
-            return False
-
-        # ignore pure numbers
-        if word.isdigit():
-            return False
-
-        # ignore pure emoji or symbols
-        if re.match(r"^[^\w\s]+$", word):
-            return False
-
-        return True
+Is "{word}" likely a typo? Answer only YES or NO."""
+                }
+            ]
+            
+            response = self._openai_client.make_request(messages, max_tokens=10)
+            is_typo = response.strip().upper() == "YES"
+            
+            logging.info(f"TypoDetector - GPT analysis for '{word}': {response.strip()} (is_typo: {is_typo})")
+            return is_typo
+            
+        except Exception as e:
+            logging.error(f"Error calling GPT for typo validation: {e}")
+            return True
 
     def _store_message(self, message):
-        """Store message data for typo detection"""
-        if message.chat_id in self._target_group_ids and message.text:
+        if message.chat_id in self._target_group_ids:
             try:
-                message_data = create_message_data(message)
-                self._message_buffer.append(message_data)
-                logging.info(f"TypoDetector - stored message from user {message_data['user_id']}: '{message_data['text']}' (buffer size: {len(self._message_buffer)})")
+                # Get text from either message text or photo caption
+                text_content = message.text or (message.caption if hasattr(message, 'caption') else None)
+                
+                if text_content:
+                    message_data = create_message_data(message)
+                    # Override text with caption if it's a photo
+                    if message.caption and not message.text:
+                        message_data['text'] = message.caption
+                    
+                    self._message_buffer.append(message_data)
+                    logging.info(f"TypoDetector - stored message from user {message_data['user_id']}: '{message_data['text']}' (buffer size: {len(self._message_buffer)})")
             except Exception as e:
                 logging.error(f"Failed to store message: {e}")
                 raise
 
-    def _detect_typo_pattern(self, current_message):
-        """
-        Detect if the current message contains a typo that's part of a repetition pattern
-        Returns the original message if pattern detected, None otherwise
+    def _detect_repetition_pattern(self, current_message):
+        # Get text from message or caption
+        current_text = current_message.text or (current_message.caption if hasattr(current_message, 'caption') else None)
+        if not current_text:
+            return None
+            
+        # extract words from current message
+        current_words = self._extract_words(current_text)
         
-        New pattern: requires 3 different users with specific conditions:
-        - At least one occurrence as part of a longer message (original context)
-        - At least one occurrence as the full message (≤ 2 words)
-        """
-        # extract potential typos from current message
-        current_typos = self._extract_potential_typos(current_message.text)
+        logging.info(f"TypoDetector - current message '{current_text}' has words: {current_words}")
         
-        logging.info(f"TypoDetector - current message '{current_message.text}' has potential typos: {current_typos}")
-        
-        if not current_typos:
+        if not current_words:
             return None
 
-        # check each potential typo for repetition patterns
-        for typo in current_typos:
-            logging.info(f"TypoDetector - checking typo pattern for: '{typo}'")
+        # check each word for repetition patterns
+        for word in current_words:
+            logging.info(f"TypoDetector - checking repetition pattern for: '{word}'")
             
-            # look for this typo in recent messages (including current)
+            # look for this word in recent messages (including current)
             original_msg = None
             different_users = set()
-            has_part_of_message = False  # typo as part of longer message
-            has_full_message = False     # typo as the full message
+            all_messages_with_word = []
 
-            # search through recent messages in chronological order
+            # search through recent messages
             for msg_data in list(self._message_buffer):
-                msg_typos = self._extract_potential_typos(msg_data["text"])
+                msg_words = self._extract_words(msg_data["text"])
                 
-                if typo in msg_typos:
+                if word in msg_words:
                     different_users.add(msg_data["user_id"])
+                    all_messages_with_word.append(msg_data)
 
                     # store the earliest occurrence as original
                     if original_msg is None:
                         original_msg = msg_data
-                    
-                    # check message context - important: check if the typo is the ENTIRE message
-                    # (not just <= 2 words, but actually the cleaned text equals the typo)
-                    cleaned_text = re.sub(r'^[^\w]+|[^\w]+$', '', msg_data["text"].strip().lower())
-                    if cleaned_text == typo:
-                        has_full_message = True
-                        logging.info(f"TypoDetector - found '{typo}' as FULL MESSAGE in: '{msg_data['text']}' by user {msg_data['user_id']}")
-                    else:
-                        has_part_of_message = True
-                        logging.info(f"TypoDetector - found '{typo}' as PART OF MESSAGE in: '{msg_data['text']}' by user {msg_data['user_id']}")
 
             # also check the current message
             different_users.add(current_message.from_user.id)
-            current_cleaned_text = re.sub(r'^[^\w]+|[^\w]+$', '', current_message.text.strip().lower())
-            if current_cleaned_text == typo:
-                has_full_message = True
-                logging.info(f"TypoDetector - current message '{current_message.text}' has '{typo}' as FULL MESSAGE by user {current_message.from_user.id}")
-            else:
-                has_part_of_message = True
-                logging.info(f"TypoDetector - current message '{current_message.text}' has '{typo}' as PART OF MESSAGE by user {current_message.from_user.id}")
+            current_msg_data = {
+                "text": current_text,
+                "user_id": current_message.from_user.id,
+                "message_id": current_message.message_id
+            }
+            all_messages_with_word.append(current_msg_data)
 
-            logging.info(f"TypoDetector - typo '{typo}' analysis: users={sorted(different_users)}, has_part_of_message={has_part_of_message}, has_full_message={has_full_message}")
+            logging.info(f"TypoDetector - word '{word}' found in {len(different_users)} different users: {sorted(different_users)}")
 
-            # pattern detected if:
-            # 1. Same word appears by 3 different users
-            # 2. At least one occurrence is part of a longer message
-            # 3. At least one occurrence is the full message
-            if (len(different_users) >= 3 and 
-                has_part_of_message and 
-                has_full_message):
-                logging.info(f"TypoDetector - PATTERN DETECTED for '{typo}' - triggering response!")
-                return original_msg
+            # pattern detected if same word appears by 3+ different users
+            if len(different_users) >= self._min_users:
+                logging.info(f"TypoDetector - REPETITION PATTERN DETECTED for '{word}' - {len(different_users)} users")
+                
+                # validate with GPT if it's actually a typo
+                is_typo = self._is_typo_via_gpt(word, all_messages_with_word)
+                
+                if is_typo:
+                    logging.info(f"TypoDetector - GPT confirmed '{word}' is a typo - triggering response!")
+                    return original_msg
+                else:
+                    logging.info(f"TypoDetector - GPT says '{word}' is not a typo - skipping")
             else:
-                logging.info(f"TypoDetector - pattern NOT detected for '{typo}' - need: 3+ users ({len(different_users)} found), part_of_message ({has_part_of_message}), full_message ({has_full_message})")
+                logging.info(f"TypoDetector - pattern NOT detected for '{word}' - need: {self._min_users}+ users ({len(different_users)} found)")
 
         return None
 
     def _process(self, update, context):
         message = update.message
-        if not message or not message.text:
+        if not message:
+            return
+
+        # Get text from either message text or photo caption
+        text_content = message.text or (message.caption if hasattr(message, 'caption') else None)
+        if not text_content:
             return
 
         chat_id = message.chat_id
         
         try:
             user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
-            logging.info(f"TypoDetector - chat: {chat_id} - user: {user_info} - text: {message.text}")
+            content_type = "caption" if message.caption and not message.text else "text"
+            logging.info(f"TypoDetector - chat: {chat_id} - user: {user_info} - {content_type}: {text_content}")
         except Exception:
-            logging.info(f"TypoDetector - chat: {chat_id} - text: {message.text}")
+            content_type = "caption" if message.caption and not message.text else "text"
+            logging.info(f"TypoDetector - chat: {chat_id} - {content_type}: {text_content}")
 
         # only process messages from target groups
         if chat_id not in self._target_group_ids:
@@ -243,8 +191,8 @@ class TypoDetector(metaclass=Singleton):
             return
 
         try:
-            # check for typo pattern BEFORE storing the current message
-            original_msg = self._detect_typo_pattern(message)
+            # check for repetition pattern BEFORE storing the current message
+            original_msg = self._detect_repetition_pattern(message)
 
             # store the message after pattern detection
             self._store_message(message)
@@ -262,14 +210,19 @@ class TypoDetector(metaclass=Singleton):
 
                 # only log when we actually trigger
                 logging.info(
-                    f"TypoDetector triggered for typo: '{message.text}' - "
-                    f"original by user {original_msg['user']}"
+                    f"TypoDetector triggered for repeated word in: '{text_content}' - "
+                    f"original by user {original_msg.get('user', original_msg.get('user_id'))}"
                 )
 
         except Exception as e:
             logging.error(f"Error in TypoDetector._process: {e}")
 
     def setup(self, dispatcher):
-        message_handler = MessageHandler(Filters.text & Filters.group, self._process)
-        dispatcher.add_handler(message_handler)
-        logging.info("TypoDetector handler registered successfully")
+        # Handle both text messages and photos with captions
+        text_handler = MessageHandler(Filters.text & Filters.group, self._process)
+        photo_handler = MessageHandler(Filters.photo & Filters.group & Filters.caption, self._process)
+        
+        dispatcher.add_handler(text_handler)
+        dispatcher.add_handler(photo_handler)
+        
+        logging.info("TypoDetector handlers registered successfully (text messages and photo captions)")
