@@ -25,10 +25,6 @@ class TypoDetector(metaclass=Singleton):
         logging.info(f"TypoDetector setup complete and ready to process messages")
 
     def _extract_words(self, message_text):
-        """
-        Extract all words from a message for repetition detection.
-        No filtering - just simple word extraction.
-        """
         if not message_text:
             return []
 
@@ -44,9 +40,6 @@ class TypoDetector(metaclass=Singleton):
         return words
 
     def _is_typo_via_gpt(self, word, context_messages):
-        """
-        Use GPT-4o-nano to determine if a repeated word is actually a typo.
-        """
         try:
             # Create examples and context for the prompt
             examples = [
@@ -92,7 +85,6 @@ Is "{word}" likely a typo? Answer only YES or NO."""
             return True
 
     def _store_message(self, message):
-        """Store message data for typo detection, including photo captions"""
         if message.chat_id in self._target_group_ids:
             try:
                 # Get text from either message text or photo caption
@@ -111,11 +103,6 @@ Is "{word}" likely a typo? Answer only YES or NO."""
                 raise
 
     def _detect_repetition_pattern(self, current_message):
-        """
-        Detect if the current message contains a word that's being repeated by multiple users.
-        Simple logic: same word from 3+ different users = potential typo.
-        Then validate with GPT if it's actually a typo.
-        """
         # Get text from message or caption
         current_text = current_message.text or (current_message.caption if hasattr(current_message, 'caption') else None)
         if not current_text:

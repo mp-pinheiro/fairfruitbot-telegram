@@ -15,7 +15,7 @@ def teardown_function():
 
 
 def create_mock_message(user_id, text, message_id=1, chat_id=-1001467780714):
-    """Create a mock telegram message for testing"""
+    """create a mock telegram message for testing"""
     message = Mock()
     message.from_user.id = user_id
     message.from_user.username = f"user{user_id}"
@@ -28,14 +28,14 @@ def create_mock_message(user_id, text, message_id=1, chat_id=-1001467780714):
 
 
 def create_mock_update(message):
-    """Create a mock telegram update for testing"""
+    """create a mock telegram update for testing"""
     update = Mock()
     update.message = message
     return update
 
 
 def test_typo_detector_initialization():
-    """Test that TypoDetector initializes correctly"""
+    """test TypoDetector initializes correctly"""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'SUMMARY_GROUP_IDS': '-1001467780714',
@@ -48,7 +48,7 @@ def test_typo_detector_initialization():
 
 
 def test_typo_detector_fazedo_case():
-    """Test the 'fazedo' case from the issue - should trigger with 3+ users and GPT validation"""
+    """test 'fazedo' case triggers with 3+ users"""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'SUMMARY_GROUP_IDS': '-1001467780714',
@@ -66,7 +66,7 @@ def test_typo_detector_fazedo_case():
             context = Mock()
             context.bot.send_message = Mock()
             
-            # Simulate the fazedo case from the issue
+            # simulate the fazedo case from the issue
             # User1: "fazedo piadinha" 
             msg1 = create_mock_message(user_id=1, text="fazedo piadinha", message_id=1)
             update1 = create_mock_update(msg1)
@@ -111,7 +111,7 @@ def test_typo_detector_fazedo_case():
 
 
 def test_typo_detector_tendeyu_case():
-    """Test the 'tendeyu' case from the issue - should trigger with 3 users and GPT validation"""
+    """test 'tendeyu' case triggers with 3+ users"""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'SUMMARY_GROUP_IDS': '-1001467780714',
@@ -164,7 +164,7 @@ def test_typo_detector_tendeyu_case():
 
 
 def test_typo_detector_extract_potential_typos():
-    """Test word extraction logic"""
+    """test word extraction logic"""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'SUMMARY_GROUP_IDS': '-1001467780714',
@@ -191,7 +191,7 @@ def test_typo_detector_extract_potential_typos():
 
 
 def test_typo_detector_different_chat():
-    """Test that detector ignores messages from non-target chats"""
+    """test detector ignores non-target chats"""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'SUMMARY_GROUP_IDS': '-1001467780714',
@@ -218,7 +218,7 @@ def test_typo_detector_different_chat():
 
 
 def test_typo_detector_min_users_configurable():
-    """Test that we can change minimum users requirement"""
+    """test minimum users requirement is configurable"""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'SUMMARY_GROUP_IDS': '-1001467780714',
@@ -260,7 +260,7 @@ def test_typo_detector_min_users_configurable():
 
 
 def test_typo_detector_photo_caption():
-    """Test that detector processes photo captions"""
+    """test detector processes photo captions"""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'SUMMARY_GROUP_IDS': '-1001467780714',
@@ -302,7 +302,7 @@ def test_typo_detector_photo_caption():
 
 
 def test_typo_detector_gpt_says_no():
-    """Test that detector doesn't trigger when GPT says it's not a typo"""
+    """test detector doesn't trigger when GPT says not a typo"""
     with patch.dict(os.environ, {
         'TELEGRAM_TOKEN': 'test_token',
         'SUMMARY_GROUP_IDS': '-1001467780714',
