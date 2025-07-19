@@ -32,16 +32,20 @@ class GroupSummary(metaclass=Singleton):
         return False
 
     def _store_message(self, message):
-        if message.chat_id in self._target_group_ids and message.text:
+        if message.chat_id in self._target_group_ids:
             try:
                 message_data = create_message_data(message)
                 # GroupSummary only needs user, text, and timestamp
-                simplified_data = {
-                    "user": message_data["user"],
-                    "text": message_data["text"],
-                    "timestamp": message_data["timestamp"],
-                }
-                self._message_buffer.append(simplified_data)
+                # Handle cases where text might be None or empty
+                message_text = message_data["text"] or ""
+                # Only store messages that have actual content
+                if message_text.strip():
+                    simplified_data = {
+                        "user": message_data["user"],
+                        "text": message_text,
+                        "timestamp": message_data["timestamp"],
+                    }
+                    self._message_buffer.append(simplified_data)
             except Exception as e:
                 logging.error(f"Failed to store message: {e}")
                 # re-raise to let caller know storage failed
@@ -104,11 +108,11 @@ class GroupSummary(metaclass=Singleton):
 
     def _process(self, update, context):
         message = update.message
-        if not message or not message.text:
+        if not message:
             return
 
         chat_id = message.chat_id
-        message_text = message.text
+        message_text = message.text or ""
 
         # log the message for debugging - do this first to ensure logging happens
         try:
