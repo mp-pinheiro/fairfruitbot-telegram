@@ -1,4 +1,5 @@
 import logging
+import time
 from collections import deque
 from telegram import ParseMode
 from telegram.ext import MessageHandler, Filters
@@ -25,6 +26,8 @@ class GroupSummary(Command):
         ]
         self._openai_client = OpenAIClient()
         self._message_buffer = deque(maxlen=100)
+        self._last_summary_times = {}  # per-group cooldown tracking
+        self._cooldown_seconds = 60  # 1 minute cooldown
 
     def _should_trigger(self, message_text):
         message_lower = message_text.lower()
@@ -123,6 +126,18 @@ class GroupSummary(Command):
         if not self._should_trigger(message_text):
             return
 
+        # check per-group cooldown
+        current_time = time.time()
+        last_summary_time = self._last_summary_times.get(chat_id, 0)
+        if current_time - last_summary_time < self._cooldown_seconds:
+            remaining = int(self._cooldown_seconds - (current_time - last_summary_time))
+            context.bot.send_message(
+                chat_id=chat_id,
+                text=f"🕐 Calma aí! Espera mais {remaining} segundos para outro resumo.",
+                parse_mode=ParseMode.HTML,
+            )
+            return
+
         try:
             recent_messages = self._get_recent_messages()
 
@@ -139,6 +154,9 @@ class GroupSummary(Command):
             response_text = f"6️⃣ falam eim!\n\n{summary}\n\nResumo gerado por Bidu-GPT."
 
             context.bot.send_message(chat_id=chat_id, text=response_text, parse_mode=ParseMode.HTML)
+            
+            # update per-group cooldown timestamp after successful summary
+            self._last_summary_times[chat_id] = time.time()
 
         except Exception as e:
             logging.error(f"Error in GroupSummary._process: {e}")
