@@ -13,18 +13,31 @@ class GroupSummary(metaclass=Singleton):
     def __init__(self):
         self._env = Environment()
         self._target_group_ids = self._env.summary_group_ids
-        self._trigger_patterns = ["6 falam", "vcs falam", "ces falam", "6️⃣", "�"]
+        self._trigger_patterns = ["6 falam", "vcs falam", "ces falam", "6️⃣"]
         self._openai_client = OpenAIClient()
         # store recent messages from the target groups
         self._message_buffer = deque(maxlen=100)
+
+    def _fix_emoji_encoding(self, text):
+        """
+        Fix corrupted emoji encoding issues.
+        The 6️⃣ emoji sometimes gets corrupted to � during transmission.
+        """
+        # Replace corrupted 6️⃣ emoji with the proper emoji
+        if "� falam" in text:
+            return text.replace("�", "6️⃣")
+        return text
 
     def _should_trigger(self, message_text, chat_id):
         # check if it's one of the target groups
         if chat_id not in self._target_group_ids:
             return False
 
+        # fix any emoji encoding issues first
+        fixed_text = self._fix_emoji_encoding(message_text)
+
         # check if message contains any trigger patterns
-        message_lower = message_text.lower()
+        message_lower = fixed_text.lower()
         for pattern in self._trigger_patterns:
             if pattern.lower() in message_lower:
                 return True
