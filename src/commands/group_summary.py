@@ -13,7 +13,16 @@ class GroupSummary(metaclass=Singleton):
     def __init__(self):
         self._env = Environment()
         self._target_group_ids = self._env.summary_group_ids
-        self._trigger_patterns = ["6 falam", "vcs falam", "ces falam", "6️⃣"]
+        self._trigger_patterns = [
+            "6 falam",
+            "vcs falam",
+            "ces falam",
+            "ceis falam",
+            "seis falam",
+            "voces falam",
+            "vocês falam",
+            "6️⃣",
+        ]
         self._openai_client = OpenAIClient()
         # store recent messages from the target groups
         self._message_buffer = deque(maxlen=100)
@@ -57,10 +66,7 @@ class GroupSummary(metaclass=Singleton):
             for msg_data in list(self._message_buffer)[-limit:]:
                 # filter out messages that contain trigger patterns
                 message_text = msg_data["text"].lower()
-                contains_trigger = any(
-                    pattern.lower() in message_text
-                    for pattern in self._trigger_patterns
-                )
+                contains_trigger = any(pattern.lower() in message_text for pattern in self._trigger_patterns)
 
                 if not contains_trigger:
                     formatted_msg = f"{msg_data['user']}: {msg_data['text']}"
@@ -92,9 +98,7 @@ class GroupSummary(metaclass=Singleton):
                 {"role": "user", "content": user_prompt},
             ]
 
-            summary = self._openai_client.make_request(
-                messages=openai_messages, max_tokens=300
-            )
+            summary = self._openai_client.make_request(messages=openai_messages, max_tokens=300)
 
             return summary.strip() if summary else "Não foi possível gerar um resumo."
 
@@ -110,12 +114,14 @@ class GroupSummary(metaclass=Singleton):
         chat_id = message.chat_id
         message_text = message.text
 
+        # ensure proper encoding for emoji handling
+        if message_text and isinstance(message_text, bytes):
+            message_text = message_text.decode("utf-8", errors="replace")
+
         # log the message for debugging - do this first to ensure logging happens
         try:
             user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
-            logging.info(
-                f"GroupSummary - chat: {chat_id} - user: {user_info} - text: {message_text}"
-            )
+            logging.info(f"GroupSummary - chat: {chat_id} - user: {user_info} - text: {message_text}")
         except Exception:
             logging.info(f"GroupSummary - chat: {chat_id} - text: {message_text}")
 
@@ -147,13 +153,9 @@ class GroupSummary(metaclass=Singleton):
             summary = self._summarize_messages(recent_messages)
 
             # send response
-            response_text = (
-                f"6️⃣ falam eim!\n\n{summary}\n\nResumo gerado por Bidu-GPT."
-            )
+            response_text = f"6️⃣ falam eim!\n\n{summary}\n\nResumo gerado por Bidu-GPT."
 
-            context.bot.send_message(
-                chat_id=chat_id, text=response_text, parse_mode=ParseMode.HTML
-            )
+            context.bot.send_message(chat_id=chat_id, text=response_text, parse_mode=ParseMode.HTML)
 
         except Exception as e:
             logging.error(f"Error in GroupSummary._process: {e}")
@@ -166,4 +168,5 @@ class GroupSummary(metaclass=Singleton):
 
     def setup(self, dispatcher):
         message_handler = MessageHandler(Filters.text & Filters.group, self._process)
-        dispatcher.add_handler(message_handler)
+        dispatcher.add_handler(message_handler, group=0)
+        logging.info("GroupSummary handler registered successfully with group=0")

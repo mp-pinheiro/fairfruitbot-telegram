@@ -20,8 +20,10 @@ class TypoDetector(metaclass=Singleton):
         self._min_users = 3
         # OpenAI client for typo validation
         self._openai_client = OpenAIClient()
-        
-        logging.info(f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, min users: {self._min_users}")
+
+        logging.info(
+            f"TypoDetector initialized - target groups: {list(self._target_group_ids)}, min users: {self._min_users}"
+        )
         logging.info(f"TypoDetector setup complete and ready to process messages")
 
     def _extract_words(self, message_text):
@@ -31,11 +33,11 @@ class TypoDetector(metaclass=Singleton):
         # clean text and extract words
         text = message_text.strip().lower()
         # remove punctuation from start/end of words
-        words = re.findall(r'\b\w+\b', text)
-        
+        words = re.findall(r"\b\w+\b", text)
+
         # filter out very short words (less than 3 characters)
         words = [word for word in words if len(word) >= 3]
-        
+
         logging.debug(f"TypoDetector - extracted words from '{message_text}': {words}")
         return words
 
@@ -47,12 +49,12 @@ class TypoDetector(metaclass=Singleton):
                 "User says 'casa' repeatedly → Actually meant 'cada' (each instead of house)",
                 "User says 'fazedo' repeatedly → Actually meant 'fazendo' (doing)",
                 "User says 'mudno' repeatedly → Actually meant 'mundo' (world)",
-                "User says 'tendeyu' repeatedly → Actually meant 'entendeu' (understood)"
+                "User says 'tendeyu' repeatedly → Actually meant 'entendeu' (understood)",
             ]
-            
+
             # Build context from recent messages
             context = "\n".join([f"User {msg['user_id']}: {msg['text']}" for msg in context_messages[-5:]])
-            
+
             messages = [
                 {
                     "role": "system",
@@ -61,25 +63,25 @@ class TypoDetector(metaclass=Singleton):
 Examples of common typos:
 {chr(10).join(examples)}
 
-Respond with only "YES" if it's likely a typo, or "NO" if it's intentional repetition or a real word being used correctly."""
+Respond with only "YES" if it's likely a typo, or "NO" if it's intentional repetition or a real word being used correctly.""",
                 },
                 {
-                    "role": "user", 
+                    "role": "user",
                     "content": f"""Word being repeated: "{word}"
 
 Recent conversation context:
 {context}
 
-Is "{word}" likely a typo? Answer only YES or NO."""
-                }
+Is "{word}" likely a typo? Answer only YES or NO.""",
+                },
             ]
-            
+
             response = self._openai_client.make_request(messages, max_tokens=10)
             is_typo = response.strip().upper() == "YES"
-            
+
             logging.info(f"TypoDetector - GPT analysis for '{word}': {response.strip()} (is_typo: {is_typo})")
             return is_typo
-            
+
         except Exception as e:
             logging.error(f"Error calling GPT for typo validation: {e}")
             return True
@@ -88,38 +90,42 @@ Is "{word}" likely a typo? Answer only YES or NO."""
         if message.chat_id in self._target_group_ids:
             try:
                 # Get text from either message text or photo caption
-                text_content = message.text or (message.caption if hasattr(message, 'caption') else None)
-                
+                text_content = message.text or (message.caption if hasattr(message, "caption") else None)
+
                 if text_content:
                     message_data = create_message_data(message)
                     # Override text with caption if it's a photo
                     if message.caption and not message.text:
-                        message_data['text'] = message.caption
-                    
+                        message_data["text"] = message.caption
+
                     self._message_buffer.append(message_data)
-                    logging.info(f"TypoDetector - stored message from user {message_data['user_id']}: '{message_data['text']}' (buffer size: {len(self._message_buffer)})")
+                    logging.info(
+                        f"TypoDetector - stored message from user {message_data['user_id']}: '{message_data['text']}' (buffer size: {len(self._message_buffer)})"
+                    )
             except Exception as e:
                 logging.error(f"Failed to store message: {e}")
                 raise
 
     def _detect_repetition_pattern(self, current_message):
         # Get text from message or caption
-        current_text = current_message.text or (current_message.caption if hasattr(current_message, 'caption') else None)
+        current_text = current_message.text or (
+            current_message.caption if hasattr(current_message, "caption") else None
+        )
         if not current_text:
             return None
-            
+
         # extract words from current message
         current_words = self._extract_words(current_text)
-        
+
         logging.info(f"TypoDetector - current message '{current_text}' has words: {current_words}")
-        
+
         if not current_words:
             return None
 
         # check each word for repetition patterns
         for word in current_words:
             logging.info(f"TypoDetector - checking repetition pattern for: '{word}'")
-            
+
             # look for this word in recent messages (including current)
             original_msg = None
             different_users = set()
@@ -128,7 +134,7 @@ Is "{word}" likely a typo? Answer only YES or NO."""
             # search through recent messages
             for msg_data in list(self._message_buffer):
                 msg_words = self._extract_words(msg_data["text"])
-                
+
                 if word in msg_words:
                     different_users.add(msg_data["user_id"])
                     all_messages_with_word.append(msg_data)
@@ -142,26 +148,30 @@ Is "{word}" likely a typo? Answer only YES or NO."""
             current_msg_data = {
                 "text": current_text,
                 "user_id": current_message.from_user.id,
-                "message_id": current_message.message_id
+                "message_id": current_message.message_id,
             }
             all_messages_with_word.append(current_msg_data)
 
-            logging.info(f"TypoDetector - word '{word}' found in {len(different_users)} different users: {sorted(different_users)}")
+            logging.info(
+                f"TypoDetector - word '{word}' found in {len(different_users)} different users: {sorted(different_users)}"
+            )
 
             # pattern detected if same word appears by 3+ different users
             if len(different_users) >= self._min_users:
                 logging.info(f"TypoDetector - REPETITION PATTERN DETECTED for '{word}' - {len(different_users)} users")
-                
+
                 # validate with GPT if it's actually a typo
                 is_typo = self._is_typo_via_gpt(word, all_messages_with_word)
-                
+
                 if is_typo:
                     logging.info(f"TypoDetector - GPT confirmed '{word}' is a typo - triggering response!")
                     return original_msg
                 else:
                     logging.info(f"TypoDetector - GPT says '{word}' is not a typo - skipping")
             else:
-                logging.info(f"TypoDetector - pattern NOT detected for '{word}' - need: {self._min_users}+ users ({len(different_users)} found)")
+                logging.info(
+                    f"TypoDetector - pattern NOT detected for '{word}' - need: {self._min_users}+ users ({len(different_users)} found)"
+                )
 
         return None
 
@@ -171,12 +181,12 @@ Is "{word}" likely a typo? Answer only YES or NO."""
             return
 
         # Get text from either message text or photo caption
-        text_content = message.text or (message.caption if hasattr(message, 'caption') else None)
+        text_content = message.text or (message.caption if hasattr(message, "caption") else None)
         if not text_content:
             return
 
         chat_id = message.chat_id
-        
+
         try:
             user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
             content_type = "caption" if message.caption and not message.text else "text"
@@ -187,7 +197,9 @@ Is "{word}" likely a typo? Answer only YES or NO."""
 
         # only process messages from target groups
         if chat_id not in self._target_group_ids:
-            logging.info(f"TypoDetector - ignoring message from chat {chat_id} (not in target groups: {list(self._target_group_ids)})")
+            logging.info(
+                f"TypoDetector - ignoring message from chat {chat_id} (not in target groups: {list(self._target_group_ids)})"
+            )
             return
 
         try:
@@ -218,11 +230,10 @@ Is "{word}" likely a typo? Answer only YES or NO."""
             logging.error(f"Error in TypoDetector._process: {e}")
 
     def setup(self, dispatcher):
-        # Handle both text messages and photos with captions
         text_handler = MessageHandler(Filters.text & Filters.group, self._process)
         photo_handler = MessageHandler(Filters.photo & Filters.group & Filters.caption, self._process)
-        
-        dispatcher.add_handler(text_handler)
-        dispatcher.add_handler(photo_handler)
-        
-        logging.info("TypoDetector handlers registered successfully (text messages and photo captions)")
+
+        dispatcher.add_handler(text_handler, group=1)
+        dispatcher.add_handler(photo_handler, group=1)
+
+        logging.info("TypoDetector handlers registered successfully (text messages and photo captions) with group=1")
