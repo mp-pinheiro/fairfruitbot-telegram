@@ -9,20 +9,26 @@ Horoscope predictions, tarot and disgusting Persona weebery.
 Create a `.env` file in the project root:
 
 ```bash
-# Required
-TELEGRAM_TOKEN=your_telegram_bot_token
-
-# Optional: restrict bot access to specific users (comma-separated user IDs)
+TELEGRAM_TOKEN=your_telegram_bot_token_here
+OPENAI_API_KEY=your_openai_api_key_here
 ALLOWED_USER_IDS=123456789,987654321
-
-# Optional: summary feature groups (comma-separated group IDs, defaults to -1001467780714)
-SUMMARY_GROUP_IDS=-1001467780714,-1001234567890
+MONITORED_GROUP_IDS=-1001467780714,-1001234567890
+DEV_MODE=false
 ```
+
+### Environment Variables
+
+- `TELEGRAM_TOKEN` - Bot token from @BotFather
+- `OPENAI_API_KEY` - OpenAI-compatible API key for DeepSeek  
+- `ALLOWED_USER_IDS` - User IDs allowed in private chats (optional)
+- `MONITORED_GROUP_IDS` - Group IDs for GroupSummary/TypoDetector (optional)
+- `DEV_MODE` - Testing mode with reduced thresholds (optional)
 
 ### Features
 
-- **User Authorization**: Control who can use bot commands via `ALLOWED_USER_IDS`
-- **Multiple Group Support**: Summary feature works in multiple groups via `SUMMARY_GROUP_IDS`
+- **User Authorization**: Control private chat access via `ALLOWED_USER_IDS`
+- **Group Monitoring**: GroupSummary (6️⃣) and TypoDetector work in `MONITORED_GROUP_IDS`
+- **Dev Mode**: Easier testing with reduced thresholds
 - Bot logs user and group IDs for easy configuration
 
 # God Damn Raspberry Pi

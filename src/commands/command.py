@@ -17,7 +17,7 @@ class Command(metaclass=Singleton):
     def _is_user_authorized(self, user_id, chat_type=None, chat_id=None):
         # private messages use ALLOWED_USER_IDS
         if chat_type in ["group", "supergroup"]:
-            return chat_id in self._env.summary_group_ids
+            return chat_id in self._env.monitored_group_ids
 
         if chat_type == "private":
             if not self._env.allowed_user_ids:

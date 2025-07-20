@@ -55,9 +55,9 @@ class Environment(metaclass=Singleton):
         allowed_users_str = self._validate_optional("ALLOWED_USER_IDS")
         self.allowed_user_ids = self._parse_id_list(allowed_users_str)
 
-        # parse summary group IDs (required)
-        summary_groups_str = self._validate("SUMMARY_GROUP_IDS")
-        self.summary_group_ids = self._parse_id_list(summary_groups_str)
+        # parse monitored group IDs (optional)
+        monitored_groups_str = self._validate_optional("MONITORED_GROUP_IDS")
+        self.monitored_group_ids = self._parse_id_list(monitored_groups_str)
 
         # dev mode configuration (optional)
         self.dev_mode = self._validate_optional("DEV_MODE", "false").lower() == "true"
@@ -68,7 +68,10 @@ class Environment(metaclass=Singleton):
         else:
             logging.info("Bot access open to all users")
 
-        logging.info(f"Summary feature enabled for group IDs: {self.summary_group_ids}")
+        if self.monitored_group_ids:
+            logging.info(f"Message monitoring enabled for group IDs: {self.monitored_group_ids}")
+        else:
+            logging.info("No monitored groups configured - GroupSummary and TypoDetector disabled")
 
         if self.dev_mode:
             logging.info("DEV MODE ENABLED - reduced thresholds for testing")
