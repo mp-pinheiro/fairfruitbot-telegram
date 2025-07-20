@@ -31,7 +31,6 @@ class Sign(Command):
         self._command = "bidu_old"
         self._fetcher = SignFetcher()
 
-    # TODO: this is duplicated in `tarot.py`
     def _parse_sign(self, sign):
         match = difflib.get_close_matches(
             sign,
@@ -56,7 +55,7 @@ class Sign(Command):
         heading = f"{data['date']} - Horóscopo de {Sign.sign_map[sign]}\n\n"  # noqa
 
         # fetch and present body info
-        body = f'<a href="{image}">• </a>'  # TODO: this is a hack
+        body = f'<a href="{image}">• </a>'
         body += f"{prediction}\n\n"
         body += f'<a href="{image}">• </a>'
         body += f"<b>Palpite do dia:</b> {guess_of_the_day}\n"

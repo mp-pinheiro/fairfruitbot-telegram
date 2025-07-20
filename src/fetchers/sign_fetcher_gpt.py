@@ -37,9 +37,7 @@ class SignFetcherGPT(Fetcher):
         results = self._astro.get_astro_for_signs(now)
 
         # horoscope prediction
-        system_prompt = SignFetcherGPT.MODEL_SYSTEM_PROMPT.format(
-            today=today, planets=results
-        )
+        system_prompt = SignFetcherGPT.MODEL_SYSTEM_PROMPT.format(today=today, planets=results)
         messages = [
             {"role": "system", "content": system_prompt},
             {

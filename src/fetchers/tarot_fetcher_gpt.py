@@ -26,9 +26,7 @@ class TarotFetcherGPT(TarotFetcher):
         # tarot prediction
         now = now.isoformat()
         results = self._astro.get_astro_for_signs(now)
-        system_prompt = SignFetcherGPT.MODEL_SYSTEM_PROMPT.format(
-            today=today, planets=results
-        )
+        system_prompt = SignFetcherGPT.MODEL_SYSTEM_PROMPT.format(today=today, planets=results)
         messages = [
             {"role": "system", "content": system_prompt},
             {

@@ -22,10 +22,8 @@ class SignFetcher(Fetcher):
             text = element.get_text().lower().strip()
             if "palplite do dia:" in text or "cor do dia:" in text:
                 split = text.split("cor do dia:")
-                guess_of_the_day = (
-                    split[0].replace("palpite do dia:", "").strip()
-                )  # noqa
-                color_of_the_day = split[1].replace("cor do dia:", "").strip()  # noqa
+                guess_of_the_day = split[0].replace("palpite do dia:", "").strip()
+                color_of_the_day = split[1].replace("cor do dia:", "").strip()
 
         return {
             "prediction": prediction,

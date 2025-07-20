@@ -6,7 +6,6 @@ from modules import PredictionModule, UsersModule
 
 
 class TarotGPT(Tarot):
-    # TODO: maybe decouple this class from the Tarot class
     def __init__(self):
         super().__init__()
         self._command = "tarot"
@@ -26,7 +25,7 @@ class TarotGPT(Tarot):
             heading = f"{data['date']} - Info de Tarot para {data['display_name']}\n\n"  # noqa
 
         # fetch and present body info
-        body = f'<a href="{image}">•  </a>'  # TODO: this is a hack
+        body = f'<a href="{image}">•  </a>'
         body += f"<b>{title.upper()}</b>\n\n"
         body += f"{prediction_body}\n\n"
 

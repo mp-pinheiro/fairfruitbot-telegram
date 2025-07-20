@@ -3,7 +3,6 @@ from fetchers import Fetcher
 
 
 class TarotFetcher(Fetcher):
-    # TODO: it might be best to separate these into a data class
     tarot_map = {
         "o papa": "V",
         "o mago": "I",
@@ -159,11 +158,7 @@ class TarotFetcher(Fetcher):
 
     def _make(self, arcana):
         # find category in category map values
-        category = next(
-            key
-            for key, value in TarotFetcher.category_map.items()
-            if value == arcana
-        )
+        category = next(key for key, value in TarotFetcher.category_map.items() if value == arcana)
 
         # fetch title
         title = arcana.upper()

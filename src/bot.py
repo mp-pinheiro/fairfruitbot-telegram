@@ -4,7 +4,7 @@ import traceback
 import locale
 
 # force UTF-8 encoding to handle emojis properly
-locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+locale.setlocale(locale.LC_ALL, "C.UTF-8")
 
 from telegram.ext import Updater
 

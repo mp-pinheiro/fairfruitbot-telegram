@@ -4,15 +4,15 @@ from telegram import ParseMode
 from telegram.ext import MessageHandler, Filters
 
 from clients import OpenAIClient
-from modules import Singleton
 from environment import Environment
 from utils import create_message_data
+from commands.command import Command
 
 
-class GroupSummary(metaclass=Singleton):
+class GroupSummary(Command):
     def __init__(self):
+        super().__init__()
         self._env = Environment()
-        self._target_group_ids = self._env.summary_group_ids
         self._trigger_patterns = [
             "6 falam",
             "vcs falam",
@@ -24,27 +24,19 @@ class GroupSummary(metaclass=Singleton):
             "6️⃣",
         ]
         self._openai_client = OpenAIClient()
-        # store recent messages from the target groups
         self._message_buffer = deque(maxlen=100)
 
-    def _should_trigger(self, message_text, chat_id):
-        # check if it's one of the target groups
-        if chat_id not in self._target_group_ids:
-            return False
-
-        # check if message contains any trigger patterns
+    def _should_trigger(self, message_text):
         message_lower = message_text.lower()
         for pattern in self._trigger_patterns:
             if pattern.lower() in message_lower:
                 return True
-
         return False
 
     def _store_message(self, message):
-        if message.chat_id in self._target_group_ids and message.text:
+        if self._is_user_authorized(message.from_user.id, message.chat.type, message.chat_id) and message.text:
             try:
                 message_data = create_message_data(message)
-                # GroupSummary only needs user, text, and timestamp
                 simplified_data = {
                     "user": message_data["user"],
                     "text": message_data["text"],
@@ -53,7 +45,6 @@ class GroupSummary(metaclass=Singleton):
                 self._message_buffer.append(simplified_data)
             except Exception as e:
                 logging.error(f"Failed to store message: {e}")
-                # re-raise to let caller know storage failed
                 raise
 
     def _get_recent_messages(self, limit=100):
@@ -61,10 +52,8 @@ class GroupSummary(metaclass=Singleton):
             if not self._message_buffer:
                 return ["[Nenhuma mensagem recente disponível]"]
 
-            # convert stored messages to text format for summarization
             messages = []
             for msg_data in list(self._message_buffer)[-limit:]:
-                # filter out messages that contain trigger patterns
                 message_text = msg_data["text"].lower()
                 contains_trigger = any(pattern.lower() in message_text for pattern in self._trigger_patterns)
 
@@ -80,7 +69,6 @@ class GroupSummary(metaclass=Singleton):
 
     def _summarize_messages(self, messages):
         try:
-            # prepare the conversation context for OpenAI
             messages_text = "\n".join(messages)
 
             system_prompt = (
@@ -114,33 +102,30 @@ class GroupSummary(metaclass=Singleton):
         chat_id = message.chat_id
         message_text = message.text
 
-        # ensure proper encoding for emoji handling
         if message_text and isinstance(message_text, bytes):
             message_text = message_text.decode("utf-8", errors="replace")
 
-        # log the message for debugging - do this first to ensure logging happens
+        if not self._is_user_authorized(message.from_user.id, message.chat.type, chat_id):
+            return
+
         try:
             user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
             logging.info(f"GroupSummary - chat: {chat_id} - user: {user_info} - text: {message_text}")
         except Exception:
             logging.info(f"GroupSummary - chat: {chat_id} - text: {message_text}")
 
-        # always store messages from the target group for later summarization
         try:
             self._store_message(message)
         except Exception as e:
             logging.error(f"GroupSummary processing stopped due to storage failure: {e}")
             return
 
-        # check if this message should trigger the summary
-        if not self._should_trigger(message_text, chat_id):
+        if not self._should_trigger(message_text):
             return
 
         try:
-            # get recent messages from our buffer
             recent_messages = self._get_recent_messages()
 
-            # skip if we don't have enough messages
             if len(recent_messages) < 5:
                 context.bot.send_message(
                     chat_id=chat_id,
@@ -149,17 +134,14 @@ class GroupSummary(metaclass=Singleton):
                 )
                 return
 
-            # generate summary
             summary = self._summarize_messages(recent_messages)
 
-            # send response
             response_text = f"6️⃣ falam eim!\n\n{summary}\n\nResumo gerado por Bidu-GPT."
 
             context.bot.send_message(chat_id=chat_id, text=response_text, parse_mode=ParseMode.HTML)
 
         except Exception as e:
             logging.error(f"Error in GroupSummary._process: {e}")
-            # send error message
             context.bot.send_message(
                 chat_id=chat_id,
                 text="Ops! Não consegui processar o resumo agora.",

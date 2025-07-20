@@ -15,32 +15,23 @@ class Command(metaclass=Singleton):
         self._env = Environment()
 
     def _is_user_authorized(self, user_id, chat_type=None, chat_id=None):
-        # backward compatibility: no chat_type provided
+        # private messages use ALLOWED_USER_IDS
+        if chat_type in ["group", "supergroup"]:
+            return chat_id in self._env.summary_group_ids
+
+        if chat_type == "private":
+            if not self._env.allowed_user_ids:
+                return True  # no user restrictions = open to all
+            return user_id in self._env.allowed_user_ids
+
+        # backward compatibility for old calls without chat_type
         if chat_type is None:
             if not self._env.allowed_user_ids:
                 return True
             return user_id in self._env.allowed_user_ids
 
-        # private messages: check user authorization
-        if chat_type == 'private':
-            if not self._env.allowed_user_ids:
-                return True
-            return user_id in self._env.allowed_user_ids
-
-        # group messages: allow any user in allowed groups
-        if chat_type in ['group', 'supergroup']:
-            if not self._env.allowed_user_ids:
-                return True
-            import os
-            explicit_summary_groups = os.getenv('SUMMARY_GROUP_IDS')
-            if not explicit_summary_groups:
-                return True
-            return chat_id in self._env.summary_group_ids
-
-        # default to user-based authorization
-        if not self._env.allowed_user_ids:
-            return True
-        return user_id in self._env.allowed_user_ids
+        # default deny for unknown chat types
+        return False
 
     def _process(self, update, context):
         # override in subclass, call super()

@@ -7,7 +7,6 @@ from commands import Command
 
 
 class News(Command):
-
     def __init__(self):
         super().__init__()
         self._command = "news"
@@ -23,7 +22,7 @@ class News(Command):
 
         # fetch and present body info
         body = f"{summary}\n\n"
-        body += f"<a href=\"{url}\">Leia mais...</a>"
+        body += f'<a href="{url}">Leia mais...</a>'
 
         # parse command characters
         message = str(heading + body)
@@ -37,9 +36,7 @@ class News(Command):
         data["date"] = get_date()
         message = self._make_prediction_message(data)
 
-        context.bot.send_message(chat_id=update.message.chat_id,
-                                 text=message,
-                                 parse_mode=ParseMode.HTML)
+        context.bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode=ParseMode.HTML)
 
     def setup(self, dispatcher):
         inline_handler = CommandHandler(self._command, self._process)

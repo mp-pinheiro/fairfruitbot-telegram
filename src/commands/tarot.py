@@ -15,10 +15,9 @@ class Tarot(Command):
     def __init__(self):
         super().__init__()
         self._command = "tarot_old"
-        self._users = {}  # TODO: make a class to handle users
+        self._users = {}
         self._fetcher = TarotFetcher()
 
-    # TODO: this is duplicated in `sign.py`
     def _parse_arcana(self, arcana):
         match = difflib.get_close_matches(
             arcana,
@@ -45,7 +44,7 @@ class Tarot(Command):
             heading = f"{data['date']} - Info de Tarot para {data['display_name']}\n\n"  # noqa
 
         # fetch and present body info
-        body = f'<a href="{image}">•  </a>'  # TODO: this is a hack
+        body = f'<a href="{image}">•  </a>'
         body += f"<b>{title.upper()}</b>\n\n"
         body += f"{prediction_body}\n\n"
 

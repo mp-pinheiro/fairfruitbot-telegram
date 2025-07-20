@@ -7,7 +7,6 @@ from modules import Singleton
 class PredictionModule(metaclass=Singleton):
     def __init__(self):
         self._users = {}
-        # TODO: include non gpt fetchers?
         self._fetchers = {
             "sign": SignFetcherGPT(),
             "tarot": TarotFetcherGPT(),
@@ -31,7 +30,7 @@ class PredictionModule(metaclass=Singleton):
         return data
 
     def _is_expired(self, request_date):
-        brt_offset = timedelta(hours=-3)  # Brasilia
+        brt_offset = timedelta(hours=-3)
         now_utc = datetime.utcnow()
         now_brt = now_utc + brt_offset
         now_brt = now_brt.date()

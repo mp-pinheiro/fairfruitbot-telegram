@@ -5,7 +5,6 @@ from modules import PredictionModule
 
 
 class SignGPT(Sign):
-    # TODO: maybe decouple this class from the Sign class
     def __init__(self):
         super().__init__()
         self._command = "bidu"
@@ -22,7 +21,7 @@ class SignGPT(Sign):
         heading = f"{data['date']} - Horóscopo de {Sign.sign_map[sign]}\n\n"  # noqa
 
         # fetch and present body info
-        body = f'<a href="{image}">• </a>'  # TODO: this is a hack
+        body = f'<a href="{image}">• </a>'
         body += f"{prediction}\n\n"
         body += f'<a href="{image}">• </a>'
         body += f"<b>Palpite do dia:</b> {guess_of_the_day}\n"

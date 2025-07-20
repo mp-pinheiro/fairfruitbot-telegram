@@ -7,11 +7,7 @@ def create_message_data(message):
     Create standardized message data structure for handlers that need to store messages.
     """
     try:
-        user_name = (
-            message.from_user.username
-            or message.from_user.first_name
-            or "Usuário"
-        )
+        user_name = message.from_user.username or message.from_user.first_name or "Usuário"
         return {
             "user": user_name,
             "user_id": message.from_user.id,
