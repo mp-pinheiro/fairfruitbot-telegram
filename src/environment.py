@@ -59,9 +59,6 @@ class Environment(metaclass=Singleton):
         monitored_groups_str = self._validate_optional("MONITORED_GROUP_IDS")
         self.monitored_group_ids = self._parse_id_list(monitored_groups_str)
 
-        # dev mode configuration (optional)
-        self.dev_mode = self._validate_optional("DEV_MODE", "false").lower() == "true"
-
         # log configuration
         if self.allowed_user_ids:
             logging.info(f"Bot access restricted to user IDs: {self.allowed_user_ids}")
@@ -73,5 +70,3 @@ class Environment(metaclass=Singleton):
         else:
             logging.info("No monitored groups configured - GroupSummary and TypoDetector disabled")
 
-        if self.dev_mode:
-            logging.info("DEV MODE ENABLED - reduced thresholds for testing")

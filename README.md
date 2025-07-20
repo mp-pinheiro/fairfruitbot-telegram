@@ -13,7 +13,7 @@ TELEGRAM_TOKEN=your_telegram_bot_token_here
 OPENAI_API_KEY=your_openai_api_key_here
 ALLOWED_USER_IDS=123456789,987654321
 MONITORED_GROUP_IDS=-1001467780714,-1001234567890
-DEV_MODE=false
+MIN_USERS=3
 ```
 
 ### Environment Variables
@@ -22,13 +22,13 @@ DEV_MODE=false
 - `OPENAI_API_KEY` - OpenAI-compatible API key for DeepSeek  
 - `ALLOWED_USER_IDS` - User IDs allowed in private chats (optional)
 - `MONITORED_GROUP_IDS` - Group IDs for GroupSummary/TypoDetector (optional)
-- `DEV_MODE` - Testing mode with reduced thresholds (optional)
+- `MIN_USERS` - Minimum users needed to trigger TypoDetector (optional, default: 3)
 
 ### Features
 
 - **User Authorization**: Control private chat access via `ALLOWED_USER_IDS`
 - **Group Monitoring**: GroupSummary (6️⃣) and TypoDetector work in `MONITORED_GROUP_IDS`
-- **Dev Mode**: Easier testing with reduced thresholds
+- **Cooldown System**: TypoDetector won't spam the same word repeatedly
 - Bot logs user and group IDs for easy configuration
 
 # God Damn Raspberry Pi

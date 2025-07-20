@@ -15,7 +15,8 @@ class TypoDetector(Command):
         super().__init__()
         self._env = Environment()
         self._message_buffer = deque(maxlen=50)
-        self._min_users = 1 if self._env.dev_mode else 3
+        self._min_users = int(self._env._validate_optional("MIN_USERS", "3"))
+        self._last_triggered_word = None
         self._openai_client = OpenAIClient()
 
         logging.info(f"TypoDetector initialized - min users: {self._min_users}")
@@ -108,7 +109,17 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
         if not current_words:
             return None
 
+        # reset cooldown if user says something different
+        if current_words and self._last_triggered_word and self._last_triggered_word not in current_words:
+            logging.info(f"TypoDetector - cooldown reset: user said something other than '{self._last_triggered_word}'")
+            self._last_triggered_word = None
+
         for word in current_words:
+            # skip if we already triggered on this word recently
+            if word == self._last_triggered_word:
+                logging.info(f"TypoDetector - skipping '{word}' due to cooldown")
+                continue
+
             logging.info(f"TypoDetector - checking repetition pattern for: '{word}'")
 
             original_msg = None
@@ -133,6 +144,10 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
             }
             all_messages_with_word.append(current_msg_data)
 
+            # if no original message found in buffer, use current message
+            if original_msg is None:
+                original_msg = current_msg_data
+
             logging.info(
                 f"TypoDetector - word '{word}' found in {len(different_users)} different users: {sorted(different_users)}"
             )
@@ -144,6 +159,7 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
 
                 if is_typo:
                     logging.info(f"TypoDetector - GPT confirmed '{word}' is a typo - triggering response!")
+                    self._last_triggered_word = word
                     return original_msg
                 else:
                     logging.info(f"TypoDetector - GPT says '{word}' is not a typo - skipping")
@@ -182,7 +198,37 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
             self._store_message(message)
 
             if original_msg:
-                response_text = "Pronto, proibido errar nesse grupo. 🤪"
+                # get the criminal (user who made the original typo)
+                criminal_user_id = original_msg["user_id"]
+
+                # get all users who repeated the typo (for the reward)
+                repeated_users = set()
+                for msg_data in self._message_buffer:
+                    msg_words = self._extract_words(msg_data["text"])
+                    if any(word == self._last_triggered_word for word in msg_words):
+                        if msg_data["user_id"] != criminal_user_id:
+                            repeated_users.add(msg_data["user_id"])
+
+                # build the ultra-sarcastic wanted poster
+                response_text = "🚨 ALERTA MÁXIMO: ERRO ORTOGRÁFICO DETECTADO 🚨\n\n"
+                response_text += f"🎯 SUSPEITO PRINCIPAL: @{message.from_user.username or 'Anônimo'}\n"
+                response_text += f"⚡ CRIME HEDIONDO: Escreveu '{self._last_triggered_word}'\n"
+                response_text += f"📱 GRAVIDADE: Máxima (erar no Telegram!!)\n\n"
+
+                if repeated_users:
+                    response_text += "🏆 HERÓIS NACIONAIS:\n"
+                    for user_id in repeated_users:
+                        # try to get username from recent messages
+                        username = "Justiceiro"
+                        for msg_data in self._message_buffer:
+                            if msg_data.get("user_id") == user_id:
+                                username = msg_data.get("user", f"Usuário{user_id}")
+                                break
+                        response_text += f"• @{username} - R$ 3.333,33\n"
+                else:
+                    response_text += "🏆 NENHUM HERÓI NACIONAL\n"
+
+                response_text += "\n🤡 PARABÉNS GUYZ, COMEDY ACHIEVED! 🤡"
 
                 context.bot.send_message(
                     chat_id=chat_id,
