@@ -19,8 +19,6 @@ class TypoDetector(Command):
         self._last_triggered_word = None
         self._openai_client = OpenAIClient()
 
-        logging.info(f"TypoDetector initialized - min users: {self._min_users}")
-        logging.info(f"TypoDetector setup complete and ready to process messages")
 
     def _extract_words(self, message_text):
         if not message_text:
@@ -31,7 +29,6 @@ class TypoDetector(Command):
 
         words = [word for word in words if len(word) >= 3]
 
-        logging.debug(f"TypoDetector - extracted words from '{message_text}': {words}")
         return words
 
     def _is_typo_via_gpt(self, word, context_messages):
@@ -70,7 +67,6 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
             response = self._openai_client.make_request(messages, max_tokens=10)
             is_typo = response.strip().upper() == "YES"
 
-            logging.info(f"TypoDetector - GPT analysis for '{word}': {response.strip()} (is_typo: {is_typo})")
             return is_typo
 
         except Exception as e:
@@ -88,9 +84,6 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
                         message_data["text"] = message.caption
 
                     self._message_buffer.append(message_data)
-                    logging.info(
-                        f"TypoDetector - stored message from user {message_data['user_id']}: '{message_data['text']}' (buffer size: {len(self._message_buffer)})"
-                    )
             except Exception as e:
                 logging.error(f"Failed to store message: {e}")
                 raise
@@ -104,23 +97,19 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
 
         current_words = self._extract_words(current_text)
 
-        logging.info(f"TypoDetector - current message '{current_text}' has words: {current_words}")
 
         if not current_words:
             return None
 
         # reset cooldown if user says something different
         if current_words and self._last_triggered_word and self._last_triggered_word not in current_words:
-            logging.info(f"TypoDetector - cooldown reset: user said something other than '{self._last_triggered_word}'")
             self._last_triggered_word = None
 
         for word in current_words:
             # skip if we already triggered on this word recently
             if word == self._last_triggered_word:
-                logging.info(f"TypoDetector - skipping '{word}' due to cooldown")
                 continue
 
-            logging.info(f"TypoDetector - checking repetition pattern for: '{word}'")
 
             original_msg = None
             different_users = set()
@@ -148,25 +137,14 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
             if original_msg is None:
                 original_msg = current_msg_data
 
-            logging.info(
-                f"TypoDetector - word '{word}' found in {len(different_users)} different users: {sorted(different_users)}"
-            )
 
             if len(different_users) >= self._min_users:
-                logging.info(f"TypoDetector - REPETITION PATTERN DETECTED for '{word}' - {len(different_users)} users")
 
                 is_typo = self._is_typo_via_gpt(word, all_messages_with_word)
 
                 if is_typo:
-                    logging.info(f"TypoDetector - GPT confirmed '{word}' is a typo - triggering response!")
                     self._last_triggered_word = word
                     return original_msg
-                else:
-                    logging.info(f"TypoDetector - GPT says '{word}' is not a typo - skipping")
-            else:
-                logging.info(
-                    f"TypoDetector - pattern NOT detected for '{word}' - need: {self._min_users}+ users ({len(different_users)} found)"
-                )
 
         return None
 
@@ -181,13 +159,6 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
 
         chat_id = message.chat_id
 
-        try:
-            user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
-            content_type = "caption" if message.caption and not message.text else "text"
-            logging.info(f"TypoDetector - chat: {chat_id} - user: {user_info} - {content_type}: {text_content}")
-        except Exception:
-            content_type = "caption" if message.caption and not message.text else "text"
-            logging.info(f"TypoDetector - chat: {chat_id} - {content_type}: {text_content}")
 
         if not self._is_user_authorized(message.from_user.id, message.chat.type, chat_id):
             return
@@ -252,4 +223,3 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
         dispatcher.add_handler(text_handler, group=1)
         dispatcher.add_handler(photo_handler, group=1)
 
-        logging.info("TypoDetector handlers registered successfully (text messages and photo captions) with group=1")

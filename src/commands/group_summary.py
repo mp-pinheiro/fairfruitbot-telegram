@@ -111,11 +111,6 @@ class GroupSummary(Command):
         if not self._is_user_authorized(message.from_user.id, message.chat.type, chat_id):
             return
 
-        try:
-            user_info = f"({message.from_user.id}) {message.from_user.username or message.from_user.full_name}"
-            logging.info(f"GroupSummary - chat: {chat_id} - user: {user_info} - text: {message_text}")
-        except Exception:
-            logging.info(f"GroupSummary - chat: {chat_id} - text: {message_text}")
 
         try:
             self._store_message(message)
@@ -169,4 +164,3 @@ class GroupSummary(Command):
     def setup(self, dispatcher):
         message_handler = MessageHandler(Filters.text & Filters.group, self._process)
         dispatcher.add_handler(message_handler, group=0)
-        logging.info("GroupSummary handler registered successfully with group=0")
