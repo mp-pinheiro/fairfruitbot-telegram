@@ -25,7 +25,7 @@ class GroupSummary(Command):
             "6️⃣",
         ]
         self._openai_client = OpenAIClient()
-        self._message_buffer = deque(maxlen=100)
+        self._message_buffers = {}  # per-group message buffers
         self._last_summary_times = {}  # per-group cooldown tracking
         self._cooldown_seconds = 60  # 1 minute cooldown
 
@@ -45,18 +45,25 @@ class GroupSummary(Command):
                     "text": message_data["text"],
                     "timestamp": message_data["timestamp"],
                 }
-                self._message_buffer.append(simplified_data)
+                
+                # get or create buffer for this group
+                chat_id = message.chat_id
+                if chat_id not in self._message_buffers:
+                    self._message_buffers[chat_id] = deque(maxlen=100)
+                
+                self._message_buffers[chat_id].append(simplified_data)
             except Exception as e:
                 logging.error(f"Failed to store message: {e}")
                 raise
 
-    def _get_recent_messages(self, limit=100):
+    def _get_recent_messages(self, chat_id, limit=100):
         try:
-            if not self._message_buffer:
+            message_buffer = self._message_buffers.get(chat_id, deque())
+            if not message_buffer:
                 return ["[Nenhuma mensagem recente disponível]"]
 
             messages = []
-            for msg_data in list(self._message_buffer)[-limit:]:
+            for msg_data in list(message_buffer)[-limit:]:
                 message_text = msg_data["text"].lower()
                 contains_trigger = any(pattern.lower() in message_text for pattern in self._trigger_patterns)
 
@@ -137,7 +144,7 @@ class GroupSummary(Command):
             # send typing indicator to show bot is processing
             context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
             
-            recent_messages = self._get_recent_messages()
+            recent_messages = self._get_recent_messages(chat_id)
 
             if len(recent_messages) < 5:
                 context.bot.send_message(

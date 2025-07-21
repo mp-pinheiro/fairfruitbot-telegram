@@ -14,9 +14,9 @@ class TypoDetector(Command):
     def __init__(self):
         super().__init__()
         self._env = Environment()
-        self._message_buffer = deque(maxlen=50)
+        self._message_buffers = {}  # per-group message buffers
         self._min_users = int(self._env._validate_optional("MIN_USERS", "3"))
-        self._last_triggered_word = None
+        self._last_triggered_words = {}  # per-group cooldowns
         self._openai_client = OpenAIClient()
 
 
@@ -83,7 +83,12 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
                     if message.caption and not message.text:
                         message_data["text"] = message.caption
 
-                    self._message_buffer.append(message_data)
+                    # get or create buffer for this group
+                    chat_id = message.chat_id
+                    if chat_id not in self._message_buffers:
+                        self._message_buffers[chat_id] = deque(maxlen=50)
+                    
+                    self._message_buffers[chat_id].append(message_data)
             except Exception as e:
                 logging.error(f"Failed to store message: {e}")
                 raise
@@ -101,13 +106,18 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
         if not current_words:
             return None
 
+        # get per-group last triggered word
+        chat_id = current_message.chat_id
+        last_triggered_word = self._last_triggered_words.get(chat_id)
+
         # reset cooldown if user says something different
-        if current_words and self._last_triggered_word and self._last_triggered_word not in current_words:
-            self._last_triggered_word = None
+        if current_words and last_triggered_word and last_triggered_word not in current_words:
+            self._last_triggered_words[chat_id] = None
+            last_triggered_word = None
 
         for word in current_words:
             # skip if we already triggered on this word recently
-            if word == self._last_triggered_word:
+            if word == last_triggered_word:
                 continue
 
 
@@ -115,7 +125,9 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
             different_users = set()
             all_messages_with_word = []
 
-            for msg_data in list(self._message_buffer):
+            # use per-group buffer
+            message_buffer = self._message_buffers.get(chat_id, deque())
+            for msg_data in list(message_buffer):
                 msg_words = self._extract_words(msg_data["text"])
 
                 if word in msg_words:
@@ -142,7 +154,7 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
                 is_typo = self._is_typo_via_gpt(word, all_messages_with_word)
 
                 if is_typo:
-                    self._last_triggered_word = word
+                    self._last_triggered_words[chat_id] = word
                     return original_msg
 
         return None
@@ -176,16 +188,18 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
 
                 # get all users who repeated the typo (for the reward)
                 repeated_users = set()
-                for msg_data in self._message_buffer:
+                message_buffer = self._message_buffers.get(chat_id, deque())
+                last_triggered_word = self._last_triggered_words.get(chat_id)
+                for msg_data in message_buffer:
                     msg_words = self._extract_words(msg_data["text"])
-                    if any(word == self._last_triggered_word for word in msg_words):
+                    if any(word == last_triggered_word for word in msg_words):
                         if msg_data["user_id"] != criminal_user_id:
                             repeated_users.add(msg_data["user_id"])
 
                 # build the ultra-sarcastic wanted poster
                 response_text = "🚨 ALERTA MÁXIMO: ERRO ORTOGRÁFICO DETECTADO 🚨\n\n"
                 response_text += f"🎯 SUSPEITO PRINCIPAL: @{message.from_user.username or 'Anônimo'}\n"
-                response_text += f"⚡ CRIME HEDIONDO: Escreveu '{self._last_triggered_word}'\n"
+                response_text += f"⚡ CRIME HEDIONDO: Escreveu '{last_triggered_word}'\n"
                 response_text += f"📱 GRAVIDADE: Máxima (erar no Telegram!!)\n\n"
 
                 if repeated_users:
@@ -193,7 +207,7 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
                     for user_id in repeated_users:
                         # try to get username from recent messages
                         username = "Justiceiro"
-                        for msg_data in self._message_buffer:
+                        for msg_data in message_buffer:
                             if msg_data.get("user_id") == user_id:
                                 username = msg_data.get("user", f"Usuário{user_id}")
                                 break
