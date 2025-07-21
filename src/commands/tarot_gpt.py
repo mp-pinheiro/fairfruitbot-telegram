@@ -1,5 +1,6 @@
 import random
 
+from telegram import ChatAction
 from commands import Tarot
 from fetchers import TarotFetcher
 from modules import PredictionModule, UsersModule

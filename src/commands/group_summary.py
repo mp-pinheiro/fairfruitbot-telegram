@@ -1,7 +1,7 @@
 import logging
 import time
 from collections import deque
-from telegram import ParseMode
+from telegram import ParseMode, ChatAction
 from telegram.ext import MessageHandler, Filters
 
 from clients import OpenAIClient
@@ -134,6 +134,9 @@ class GroupSummary(Command):
             return
 
         try:
+            # send typing indicator to show bot is processing
+            context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+            
             recent_messages = self._get_recent_messages()
 
             if len(recent_messages) < 5:

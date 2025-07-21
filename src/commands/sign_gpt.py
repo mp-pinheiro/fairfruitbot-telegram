@@ -1,4 +1,4 @@
-from telegram import ParseMode
+from telegram import ParseMode, ChatAction
 
 from commands import Sign
 from modules import PredictionModule
@@ -40,6 +40,9 @@ class SignGPT(Sign):
 
     def _process(self, update, context):
         telegram_message = super(Sign, self)._process(update, context)
+
+        # send typing indicator while generating prediction
+        context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
 
         args = context.args
         query = " ".join(args)

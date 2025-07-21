@@ -2,7 +2,7 @@ import difflib
 import random
 from datetime import datetime
 
-from telegram import ParseMode
+from telegram import ParseMode, ChatAction
 
 from commands import Command
 from fetchers import TarotFetcher
@@ -124,6 +124,9 @@ class Tarot(Command):
 
     def _process(self, update, context):
         telegram_message = super()._process(update, context)
+        
+        # send typing indicator for longer processing commands
+        context.bot.send_chat_action(chat_id=update.message.chat_id, action=ChatAction.TYPING)
 
         # fetch user data
         userid = update.message.from_user.id

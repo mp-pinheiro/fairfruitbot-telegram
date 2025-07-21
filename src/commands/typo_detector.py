@@ -1,7 +1,7 @@
 import logging
 import re
 from collections import deque, defaultdict
-from telegram import ParseMode
+from telegram import ParseMode, ChatAction
 from telegram.ext import MessageHandler, Filters
 
 from environment import Environment
@@ -139,7 +139,6 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
 
 
             if len(different_users) >= self._min_users:
-
                 is_typo = self._is_typo_via_gpt(word, all_messages_with_word)
 
                 if is_typo:
@@ -169,6 +168,9 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
             self._store_message(message)
 
             if original_msg:
+                # send typing indicator now that we're confirmed to send a response
+                context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+                
                 # get the criminal (user who made the original typo)
                 criminal_user_id = original_msg["user_id"]
 

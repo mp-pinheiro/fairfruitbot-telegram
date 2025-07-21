@@ -1,6 +1,6 @@
 import logging
 
-from telegram import ParseMode
+from telegram import ParseMode, ChatAction
 from telegram.ext import CommandHandler
 
 from modules import Singleton
@@ -13,6 +13,13 @@ class Command(metaclass=Singleton):
         self._command = None
         self._fetcher = None
         self._env = Environment()
+
+    def _send_typing_action(self, context, chat_id):
+        """send typing indicator to show bot is processing"""
+        try:
+            context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+        except Exception:
+            pass  # ignore typing action failures
 
     def _is_user_authorized(self, user_id, chat_type=None, chat_id=None):
         # private messages use ALLOWED_USER_IDS
