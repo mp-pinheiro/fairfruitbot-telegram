@@ -6,6 +6,7 @@ from telegram.ext import MessageHandler, Filters
 
 from environment import Environment
 from utils import create_message_data
+from modules import PrivacyManager
 from clients.openai_client import OpenAIClient
 from commands.command import Command
 
@@ -33,6 +34,10 @@ class TypoDetector(Command):
 
     def _is_typo_via_gpt(self, word, context_messages):
         try:
+            # anonymize messages before sending to GPT
+            privacy_manager = PrivacyManager()
+            anon_messages, _ = privacy_manager.anonymize_messages(context_messages)
+            
             examples = [
                 "User says 'me' repeatedly → Actually meant 'né' (Brazilian Portuguese for 'right?')",
                 "User says 'casa' repeatedly → Actually meant 'cada' (each instead of house)",
@@ -41,7 +46,7 @@ class TypoDetector(Command):
                 "User says 'tendeyu' repeatedly → Actually meant 'entendeu' (understood)",
             ]
 
-            context = "\n".join([f"User {msg['user_id']}: {msg['text']}" for msg in context_messages[-5:]])
+            context = "\n".join([f"{msg['user']}: {msg['text']}" for msg in anon_messages[-5:]])
 
             messages = [
                 {

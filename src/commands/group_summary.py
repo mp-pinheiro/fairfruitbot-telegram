@@ -7,6 +7,7 @@ from telegram.ext import MessageHandler, Filters
 from clients import OpenAIClient
 from environment import Environment
 from utils import create_message_data
+from modules import PrivacyManager
 from commands.command import Command
 
 
@@ -79,7 +80,24 @@ class GroupSummary(Command):
 
     def _summarize_messages(self, messages):
         try:
-            messages_text = "\n".join(messages)
+            # anonymize usernames before sending to GPT
+            privacy_manager = PrivacyManager()
+            
+            # convert message strings to dict format for anonymization
+            message_dicts = []
+            for msg in messages:
+                # parse "username: text" format
+                parts = msg.split(": ", 1)
+                if len(parts) == 2:
+                    message_dicts.append({"user": parts[0], "text": parts[1]})
+                else:
+                    message_dicts.append({"user": "Unknown", "text": msg})
+            
+            anon_messages, user_mapping = privacy_manager.anonymize_messages(message_dicts)
+            
+            # reconstruct message text with anonymized usernames
+            anon_text_lines = [f"{msg['user']}: {msg['text']}" for msg in anon_messages]
+            messages_text = "\n".join(anon_text_lines)
 
             system_prompt = (
                 "Você é um assistente que resume conversas em português brasileiro. "
@@ -97,8 +115,15 @@ class GroupSummary(Command):
             ]
 
             summary = self._openai_client.make_request(messages=openai_messages, max_tokens=300)
-
-            return summary.strip() if summary else "Não foi possível gerar um resumo."
+            
+            # de-anonymize the summary by replacing hashed usernames with real ones
+            if summary:
+                summary = summary.strip()
+                for hashed_user, real_user in user_mapping.items():
+                    summary = summary.replace(hashed_user, real_user)
+                return summary
+            else:
+                return "Não foi possível gerar um resumo."
 
         except Exception as e:
             logging.error(f"Error summarizing messages: {e}")
