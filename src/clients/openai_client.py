@@ -11,12 +11,13 @@ load_dotenv()
 class OpenAIClient:
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     MODEL_DEFAULT = os.getenv("OPENAI_MODEL_DEFAULT", "deepseek-reasoner")
+    BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.deepseek.com")
     REQUEST_MAX_RETRIES = 12
     MAX_TOKENS = 200
 
     def __init__(self) -> None:
         try:
-            self._client = OpenAI(api_key=OpenAIClient.OPENAI_API_KEY, base_url="https://api.deepseek.com")
+            self._client = OpenAI(api_key=OpenAIClient.OPENAI_API_KEY, base_url=OpenAIClient.BASE_URL)
         except OpenAIError:
             raise UsageError(
                 "Could not initialize OpenAI client. Make sure you have the `OPENAI_API_KEY` environment variable set."

@@ -12,6 +12,7 @@ Create a `.env` file in the project root:
 TELEGRAM_TOKEN=your_telegram_bot_token_here
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL_DEFAULT=deepseek-reasoner
+OPENAI_BASE_URL=https://api.deepseek.com
 ALLOWED_USER_IDS=123456789,987654321
 MONITORED_GROUP_IDS=-1001234567890,-1001987654321
 MIN_USERS=3
@@ -20,11 +21,18 @@ MIN_USERS=3
 ### Environment Variables
 
 - `TELEGRAM_TOKEN` - Bot token from @BotFather
-- `OPENAI_API_KEY` - OpenAI-compatible API key for DeepSeek  
-- `OPENAI_MODEL_DEFAULT` - DeepSeek model to use (optional, default: deepseek-reasoner)
+- `OPENAI_API_KEY` - API key (DeepSeek or OpenAI)  
+- `OPENAI_MODEL_DEFAULT` - Model to use (optional, default: deepseek-reasoner)
+- `OPENAI_BASE_URL` - API endpoint (optional, default: https://api.deepseek.com)
 - `ALLOWED_USER_IDS` - User IDs allowed in private chats (optional)
 - `MONITORED_GROUP_IDS` - Group IDs for GroupSummary/TypoDetector (optional)
 - `MIN_USERS` - Minimum users needed to trigger TypoDetector (optional, default: 3)
+
+#### Switching to OpenAI GPT-4.1:
+```bash
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL_DEFAULT=gpt-4.1
+```
 
 ### Features
 
