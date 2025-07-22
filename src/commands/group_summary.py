@@ -101,9 +101,11 @@ class GroupSummary(Command):
 
             system_prompt = (
                 "Você é um assistente que resume conversas em português brasileiro. "
-                "Crie um resumo conciso e natural do que foi discutido, "
-                "focando nos principais tópicos e pontos importantes. "
-                "Mantenha o resumo breve e informativo. "
+                "REGRA OBRIGATÓRIA: SEMPRE use os identificadores completos dos usuários (ex: User_12345-abcd-6789-efgh-123456789012) "
+                "quando mencionar quem disse alguma coisa. NUNCA generalize como 'os usuários' ou 'alguém'. "
+                "SEMPRE seja específico: 'User_12345-abcd-6789-efgh-123456789012 disse que...', 'User_98765-wxyz-4321-ijkl-098765432109 concordou...'. "
+                "Crie um resumo conciso focando nos principais tópicos e sempre identifique quem participou. "
+                "Mantenha o resumo breve mas sempre mencione os identificadores dos usuários. "
                 "NÃO comece o resumo com 'Resumo da conversa' ou similar."
             )
 
@@ -116,11 +118,11 @@ class GroupSummary(Command):
 
             summary = self._openai_client.make_request(messages=openai_messages, max_tokens=300)
             
-            # de-anonymize the summary by replacing hashed usernames with real ones
+            # de-anonymize the summary by replacing user hashes with real names
             if summary:
                 summary = summary.strip()
-                for hashed_user, real_user in user_mapping.items():
-                    summary = summary.replace(hashed_user, real_user)
+                for user_hash, real_user in user_mapping.items():
+                    summary = summary.replace(user_hash, real_user)
                 return summary
             else:
                 return "Não foi possível gerar um resumo."

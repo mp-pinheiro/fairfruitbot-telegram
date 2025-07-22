@@ -7,7 +7,15 @@ def create_message_data(message):
     Create standardized message data structure for handlers that need to store messages.
     """
     try:
-        user_name = message.from_user.username or message.from_user.first_name or "Usuário"
+        # match what appears in actual messages
+        if message.from_user.username:
+            user_name = message.from_user.username  # appears as @username
+        else:
+            # no username, show full name like Telegram does
+            full_name = message.from_user.first_name or ""
+            if message.from_user.last_name:
+                full_name += f" {message.from_user.last_name}"
+            user_name = full_name or "Usuário"
         return {
             "user": user_name,
             "user_id": message.from_user.id,

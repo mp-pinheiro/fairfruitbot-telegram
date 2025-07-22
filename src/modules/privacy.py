@@ -1,6 +1,7 @@
 import hashlib
 import re
 import secrets
+import uuid
 from typing import Dict, Tuple
 
 
@@ -12,45 +13,20 @@ class PrivacyManager:
         self._reverse_map = {}  # original -> hash
     
     def _hash_username(self, username: str) -> str:
-        """create a natural-looking fake name"""
+        """create a unique user identifier"""
         if not username:
-            return "João"
+            return "User0"
             
         # check if we already hashed this username
         if username in self._reverse_map:
             return self._reverse_map[username]
             
-        # lists of Brazilian first names and surnames
-        first_names = [
-            "Ana", "João", "Maria", "Pedro", "Carla", "Lucas", "Fernanda", "Bruno",
-            "Juliana", "Rafael", "Camila", "Diego", "Beatriz", "Gabriel", "Amanda",
-            "Thiago", "Larissa", "Mateus", "Priscila", "Felipe", "Vanessa", "André",
-            "Isabela", "Ricardo", "Patrícia", "Rodrigo", "Letícia", "Marcelo"
-        ]
-        
-        surnames = [
-            "Silva", "Santos", "Oliveira", "Souza", "Pereira", "Costa", "Ferreira",
-            "Almeida", "Barbosa", "Ribeiro", "Martins", "Carvalho", "Rocha", "Lima",
-            "Araújo", "Fernandes", "Gomes", "Nascimento", "Mendes", "Cardoso", "Reis",
-            "Castro", "Pinto", "Teixeira", "Correia", "Vieira", "Machado"
-        ]
-        
-        # create deterministic hashes to pick consistent names
+        # create deterministic UUID from salted username
         salted = f"{self._salt}:{username}"
         hash_bytes = hashlib.sha256(salted.encode()).digest()
-        first_hash = int.from_bytes(hash_bytes[:4], 'big')
-        last_hash = int.from_bytes(hash_bytes[4:8], 'big')
-        
-        first_name = first_names[first_hash % len(first_names)]
-        surname = surnames[last_hash % len(surnames)]
-        fake_name = f"{first_name} {surname}"
-        
-        # handle collisions by adding number suffix
-        original_fake = fake_name
-        counter = 1
-        while fake_name in self._user_map:
-            fake_name = f"{original_fake}{counter}"
-            counter += 1
+        # use first 16 bytes to create UUID
+        fake_uuid = str(uuid.UUID(bytes=hash_bytes[:16]))
+        fake_name = f"User_{fake_uuid}"
         
         # store mappings
         self._user_map[fake_name] = username
