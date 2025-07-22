@@ -105,7 +105,7 @@ class GroupSummary(Command):
                 "quando mencionar quem disse alguma coisa. NUNCA generalize como 'os usuários' ou 'alguém'. "
                 "SEMPRE seja específico: 'User_12345-abcd-6789-efgh-123456789012 disse que...', 'User_98765-wxyz-4321-ijkl-098765432109 concordou...'. "
                 "Crie um resumo conciso focando nos principais tópicos e sempre identifique quem participou. "
-                "Mantenha o resumo breve mas sempre mencione os identificadores dos usuários. "
+                "IMPORTANTE: Mantenha o resumo em no máximo 300 tokens para evitar corte. Se a conversa for longa, foque apenas nos tópicos mais relevantes. "
                 "NÃO comece o resumo com 'Resumo da conversa' ou similar. "
                 "NÃO adicione assinatura ou identificação no final do resumo."
             )
@@ -117,7 +117,7 @@ class GroupSummary(Command):
                 {"role": "user", "content": user_prompt},
             ]
 
-            summary = self._openai_client.make_request(messages=openai_messages, max_tokens=300)
+            summary = self._openai_client.make_request(messages=openai_messages, max_tokens=400)
 
             # de-anonymize the summary by replacing user hashes with real names
             if summary:
