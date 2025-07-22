@@ -46,12 +46,12 @@ class GroupSummary(Command):
                     "text": message_data["text"],
                     "timestamp": message_data["timestamp"],
                 }
-                
+
                 # get or create buffer for this group
                 chat_id = message.chat_id
                 if chat_id not in self._message_buffers:
                     self._message_buffers[chat_id] = deque(maxlen=100)
-                
+
                 self._message_buffers[chat_id].append(simplified_data)
             except Exception as e:
                 logging.error(f"Failed to store message: {e}")
@@ -82,7 +82,7 @@ class GroupSummary(Command):
         try:
             # anonymize usernames before sending to GPT
             privacy_manager = PrivacyManager()
-            
+
             # convert message strings to dict format for anonymization
             message_dicts = []
             for msg in messages:
@@ -92,9 +92,9 @@ class GroupSummary(Command):
                     message_dicts.append({"user": parts[0], "text": parts[1]})
                 else:
                     message_dicts.append({"user": "Unknown", "text": msg})
-            
+
             anon_messages, user_mapping = privacy_manager.anonymize_messages(message_dicts)
-            
+
             # reconstruct message text with anonymized usernames
             anon_text_lines = [f"{msg['user']}: {msg['text']}" for msg in anon_messages]
             messages_text = "\n".join(anon_text_lines)
@@ -106,7 +106,8 @@ class GroupSummary(Command):
                 "SEMPRE seja específico: 'User_12345-abcd-6789-efgh-123456789012 disse que...', 'User_98765-wxyz-4321-ijkl-098765432109 concordou...'. "
                 "Crie um resumo conciso focando nos principais tópicos e sempre identifique quem participou. "
                 "Mantenha o resumo breve mas sempre mencione os identificadores dos usuários. "
-                "NÃO comece o resumo com 'Resumo da conversa' ou similar."
+                "NÃO comece o resumo com 'Resumo da conversa' ou similar. "
+                "NÃO adicione assinatura ou identificação no final do resumo."
             )
 
             user_prompt = f"Resuma esta conversa em português:\n\n{messages_text}"
@@ -117,12 +118,17 @@ class GroupSummary(Command):
             ]
 
             summary = self._openai_client.make_request(messages=openai_messages, max_tokens=300)
-            
+
             # de-anonymize the summary by replacing user hashes with real names
             if summary:
                 summary = summary.strip()
                 for user_hash, real_user in user_mapping.items():
+                    # replace both full User_UUID format and just the hash part
                     summary = summary.replace(user_hash, real_user)
+                    # also handle cases where only the UUID part appears
+                    if user_hash.startswith("User_"):
+                        uuid_part = user_hash[5:]  # remove "User_" prefix
+                        summary = summary.replace(uuid_part, real_user)
                 return summary
             else:
                 return "Não foi possível gerar um resumo."
@@ -144,7 +150,6 @@ class GroupSummary(Command):
 
         if not self._is_user_authorized(message.from_user.id, message.chat.type, chat_id):
             return
-
 
         try:
             self._store_message(message)
@@ -170,7 +175,7 @@ class GroupSummary(Command):
         try:
             # send typing indicator to show bot is processing
             context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
-            
+
             recent_messages = self._get_recent_messages(chat_id)
 
             if len(recent_messages) < 5:
@@ -186,7 +191,7 @@ class GroupSummary(Command):
             response_text = f"6️⃣ falam eim!\n\n{summary}\n\nResumo gerado por Bidu-GPT."
 
             context.bot.send_message(chat_id=chat_id, text=response_text, parse_mode=ParseMode.HTML)
-            
+
             # update per-group cooldown timestamp after successful summary
             self._last_summary_times[chat_id] = time.time()
 
