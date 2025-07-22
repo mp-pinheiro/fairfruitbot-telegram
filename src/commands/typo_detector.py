@@ -1,6 +1,6 @@
 import logging
 import re
-from collections import deque, defaultdict
+from collections import deque
 from telegram import ParseMode, ChatAction
 from telegram.ext import MessageHandler, Filters
 
@@ -209,9 +209,9 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
                 
                 # build the ultra-sarcastic wanted poster
                 response_text = "🚨 ALERTA MÁXIMO: ERRO ORTOGRÁFICO DETECTADO 🚨\n\n"
-                response_text += f"🎯 SUSPEITO PRINCIPAL: @{criminal_username}\n"
+                response_text += f"🎯 SUSPEITO PRINCIPAL: {criminal_username}\n"
                 response_text += f"⚡ CRIME HEDIONDO: Escreveu '{last_triggered_word}'\n"
-                response_text += f"📱 GRAVIDADE: Máxima (erar no Telegram!!)\n\n"
+                response_text += f"📱 GRAVIDADE: Máxima (errar no Telegram!!)\n\n"
 
                 if repeated_users:
                     # split the reward equally among heroes
@@ -220,7 +220,7 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
                     response_text += "🏆 HERÓIS NACIONAIS:\n"
                     for user_id in repeated_users:
                         username = repeated_users_data.get(user_id, "Justiceiro")
-                        response_text += f"• @{username} - R$ {individual_reward:.2f}\n"
+                        response_text += f"• {username} - R$ {individual_reward:.2f}\n"
                 else:
                     response_text += "🏆 NENHUM HERÓI NACIONAL\n"
 
