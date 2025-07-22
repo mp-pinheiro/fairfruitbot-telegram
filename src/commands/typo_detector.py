@@ -193,30 +193,34 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
 
                 # get all users who repeated the typo (for the reward)
                 repeated_users = set()
+                repeated_users_data = {}  # store user_id -> username mapping
                 message_buffer = self._message_buffers.get(chat_id, deque())
                 last_triggered_word = self._last_triggered_words.get(chat_id)
+                
                 for msg_data in message_buffer:
                     msg_words = self._extract_words(msg_data["text"])
                     if any(word == last_triggered_word for word in msg_words):
                         if msg_data["user_id"] != criminal_user_id:
                             repeated_users.add(msg_data["user_id"])
+                            repeated_users_data[msg_data["user_id"]] = msg_data.get("user", f"Usuário{msg_data['user_id']}")
 
+                # get criminal username from original message
+                criminal_username = original_msg.get("user", "Anônimo")
+                
                 # build the ultra-sarcastic wanted poster
                 response_text = "🚨 ALERTA MÁXIMO: ERRO ORTOGRÁFICO DETECTADO 🚨\n\n"
-                response_text += f"🎯 SUSPEITO PRINCIPAL: @{message.from_user.username or 'Anônimo'}\n"
+                response_text += f"🎯 SUSPEITO PRINCIPAL: @{criminal_username}\n"
                 response_text += f"⚡ CRIME HEDIONDO: Escreveu '{last_triggered_word}'\n"
                 response_text += f"📱 GRAVIDADE: Máxima (erar no Telegram!!)\n\n"
 
                 if repeated_users:
+                    # split the reward equally among heroes
+                    total_reward = 10000.00
+                    individual_reward = total_reward / len(repeated_users)
                     response_text += "🏆 HERÓIS NACIONAIS:\n"
                     for user_id in repeated_users:
-                        # try to get username from recent messages
-                        username = "Justiceiro"
-                        for msg_data in message_buffer:
-                            if msg_data.get("user_id") == user_id:
-                                username = msg_data.get("user", f"Usuário{user_id}")
-                                break
-                        response_text += f"• @{username} - R$ 3.333,33\n"
+                        username = repeated_users_data.get(user_id, "Justiceiro")
+                        response_text += f"• @{username} - R$ {individual_reward:.2f}\n"
                 else:
                     response_text += "🏆 NENHUM HERÓI NACIONAL\n"
 

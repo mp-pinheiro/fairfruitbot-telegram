@@ -11,8 +11,9 @@ Create a `.env` file in the project root:
 ```bash
 TELEGRAM_TOKEN=your_telegram_bot_token_here
 OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL_DEFAULT=deepseek-reasoner
 ALLOWED_USER_IDS=123456789,987654321
-MONITORED_GROUP_IDS=-1001467780714,-1001234567890
+MONITORED_GROUP_IDS=-1001234567890,-1001987654321
 MIN_USERS=3
 ```
 
@@ -20,6 +21,7 @@ MIN_USERS=3
 
 - `TELEGRAM_TOKEN` - Bot token from @BotFather
 - `OPENAI_API_KEY` - OpenAI-compatible API key for DeepSeek  
+- `OPENAI_MODEL_DEFAULT` - DeepSeek model to use (optional, default: deepseek-reasoner)
 - `ALLOWED_USER_IDS` - User IDs allowed in private chats (optional)
 - `MONITORED_GROUP_IDS` - Group IDs for GroupSummary/TypoDetector (optional)
 - `MIN_USERS` - Minimum users needed to trigger TypoDetector (optional, default: 3)
