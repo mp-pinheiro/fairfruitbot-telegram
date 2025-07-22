@@ -10,7 +10,7 @@ load_dotenv()
 
 class OpenAIClient:
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    MODEL_DEFAULT = "deepseek-chat"
+    MODEL_DEFAULT = os.getenv("OPENAI_MODEL_DEFAULT", "deepseek-reasoner")
     REQUEST_MAX_RETRIES = 12
     MAX_TOKENS = 200
 
