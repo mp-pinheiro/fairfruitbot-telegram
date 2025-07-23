@@ -63,6 +63,13 @@ class TarotFetcherGPT(TarotFetcher):
         tarot_reader = random.choice(self.TAROT_PERSONAS)
         narrative_style = random.choice(self.TAROT_STYLES)
 
+        # Extract character names from Persona game data for subtle references
+        persona_characters = []
+        for arcana_data in arcanas:
+            for character in arcana_data.get("characters", []):
+                persona_characters.append(character["name"])
+        characters_text = ", ".join(persona_characters) if persona_characters else "nenhum"
+
         system_prompt = self.TAROT_SYSTEM_PROMPT.format(today=today, planets=results)
         messages = [
             {"role": "system", "content": system_prompt},
@@ -74,7 +81,7 @@ class TarotFetcherGPT(TarotFetcher):
                 "Seja enigmático, evite previsões óbvias. Mergulhe no simbolismo da carta. Não comece com frases "
                 "genéricas como 'a carta revela', 'o tarô mostra'. Vá direto ao ponto com linguagem poética e "
                 "misteriosa. Garanta que o texto seja atemporal e que cada previsão tenha uma voz completamente "
-                f"diferente. Sem mencionar diretamente Persona, use sutilmente os dados: '{arcanas}'. "
+                f"diferente. Se apropriado, faça referências sutis aos personagens: {characters_text}. "
                 "Faça revelações ousadas e específicas sobre o futuro, como se fosse uma visão mística real. "
                 "A carta deve ser o centro da revelação. Seja profético, não apenas conselheiro. Ouse nas profecias. "
                 f"Responda em aproximadamente {TarotFetcherGPT.PREDICTION_SIZE_CHARS} caracteres (20% mais ou menos)",
