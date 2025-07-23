@@ -6,6 +6,37 @@ from modules import AstroModule
 
 
 class TarotFetcherGPT(TarotFetcher):
+    TAROT_SYSTEM_PROMPT = (
+        "Você é um místico tarólogo com personalidade única, especializado em leituras de tarô. "
+        "Sua abordagem é mais esotérica e simbólica que astrológica. Hoje é {today}. "
+        "Use linguagem poética, misteriosa e envolvente, com metáforas ligadas ao simbolismo das cartas. "
+        "Seja dramático quando necessário, use elementos como 'véus do mistério', 'sussurros do destino', "
+        "'energias ancestrais', 'portais do tempo'. Varie entre tons solenes, brincalhões, enigmáticos ou "
+        "irreverentes dependendo da carta. As energias cósmicas são: {planets} - use-as como inspiração "
+        "sutil, não como foco principal. Cada previsão deve ter uma personalidade única e imprevisível. "
+        "Crie narrativas que soem como profecias ou revelações místicas, não conselhos astrológicos. "
+        "Seja mais teatral e menos científico que um astrólogo. Use linguagem coloquial misturada com "
+        "misticismo - como um oráculo moderno que fala gírias."
+    )
+    
+    TAROT_PERSONAS = [
+        "sábio ancestral que sussurra segredos",
+        "oráculo irreverente e moderno", 
+        "vidente dramático e teatral",
+        "místico brincalhão e enigmático",
+        "profeta urbano com linguagem de rua",
+        "bruxa contemporânea e perspicaz"
+    ]
+    
+    TAROT_STYLES = [
+        "tom de suspense e mistério",
+        "estilo de conversa íntima e conspiratorial", 
+        "linguagem de conto de fadas sombrio",
+        "narrativa de filme noir místico",
+        "prosa poética e envolvente",
+        "estilo de podcast sobrenatural"
+    ]
+    
     PREDICTION_SIZE_CHARS = 320
 
     def __init__(self):
@@ -23,23 +54,28 @@ class TarotFetcherGPT(TarotFetcher):
         arcanas = self._arcanas[category].values()
         title = f"{card} ({arcana_name})"
 
-        # tarot prediction
+        # tarot prediction with randomized style
         now = now.isoformat()
         results = self._astro.get_astro_for_signs(now)
-        system_prompt = SignFetcherGPT.MODEL_SYSTEM_PROMPT.format(today=today, planets=results)
+        
+        # Add randomization for more variety
+        persona = random.choice(self.TAROT_PERSONAS)
+        style = random.choice(self.TAROT_STYLES)
+        
+        system_prompt = self.TAROT_SYSTEM_PROMPT.format(today=today, planets=results)
         messages = [
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": f"Escreva uma previsão de tarô para a carta: '{card}'. Responda em um único parágrafo. Use "
-                "seus conhecimentos de tarô. Seja preciso e direto, use metáforas, figuras de linguagem, sem clichês. "
-                "Seja claro, evite ambiguidades. Arrisque, seja sinistro. Não comece com 'hoje', 'a carta', 'o tarô', "
-                "ou outros inícios genéricos. Garanta que o texto seja atemporal, e que as previsões sejam sempre bem "
-                f"diferentes umas das outras. Sem mencionar diretamente Persona, use os dados: '{arcanas}'. "
-                "Faça previsões arriscadas, seja o menos genérico possível. Seja muito ousado, dê conselhos e futuro "
-                "com exatidão, de forma única e vidente, e sempre criativa, pra que a previsão seja incrível. A carta "
-                "deve ter um papel central na previsão. A previsão deve obrigatoriamente ter uma previsão de futuro "
-                "específica baseada nos termos acima. Extrapole nos chutes. "
+                "content": f"Escreva uma previsão de tarô para a carta: '{card}' como um {persona}, usando {style}. "
+                "Responda em um único parágrafo. Use seus conhecimentos de tarô e simbolismo das cartas. "
+                "Seja místico e envolvente, use metáforas esotéricas, elementos sobrenaturais, sem clichês banais. "
+                "Seja enigmático, evite previsões óbvias. Mergulhe no simbolismo da carta. Não comece com frases "
+                "genéricas como 'a carta revela', 'o tarô mostra'. Vá direto ao ponto com linguagem poética e "
+                "misteriosa. Garanta que o texto seja atemporal e que cada previsão tenha uma voz completamente "
+                f"diferente. Sem mencionar diretamente Persona, use sutilmente os dados: '{arcanas}'. "
+                "Faça revelações ousadas e específicas sobre o futuro, como se fosse uma visão mística real. "
+                "A carta deve ser o centro da revelação. Seja profético, não apenas conselheiro. Ouse nas profecias. "
                 f"Responda em aproximadamente {TarotFetcherGPT.PREDICTION_SIZE_CHARS} caracteres (20% mais ou menos)",
             },
         ]

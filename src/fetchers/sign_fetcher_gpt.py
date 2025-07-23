@@ -20,6 +20,31 @@ class SignFetcherGPT(Fetcher):
         "Inclua outros temas, mude a ordem, crie previsões diferenciadas e com personalidade. Crie narrativas "
         "envolventes e interessantes. Faça previsões ousadas, chute mesmo. Seja impessoal, sem nomes ou lugares. "
     )
+    
+    HOROSCOPE_THEMES = [
+        "amor e relacionamentos",
+        "trabalho e carreira", 
+        "dinheiro e finanças",
+        "família e amizades",
+        "saúde e bem-estar",
+        "viagens e aventuras",
+        "estudos e conhecimento",
+        "mistérios e segredos",
+        "sorte e oportunidades",
+        "mudanças inesperadas"
+    ]
+    
+    HOROSCOPE_MOODS = [
+        "otimista e enérgico",
+        "misterioso e intrigante",
+        "bem-humorado e descontraído", 
+        "dramático e intenso",
+        "sábio e reflexivo",
+        "irreverente e moderno",
+        "poético e romântico",
+        "direto e sem papas na língua"
+    ]
+    
     PREDICTION_SIZE_CHARS = 420
 
     def __init__(self):
@@ -36,17 +61,21 @@ class SignFetcherGPT(Fetcher):
         now = now.isoformat()
         results = self._astro.get_astro_for_signs(now)
 
-        # horoscope prediction
+        # horoscope prediction with randomized elements
+        theme = random.choice(self.HOROSCOPE_THEMES)
+        mood = random.choice(self.HOROSCOPE_MOODS)
+        
         system_prompt = SignFetcherGPT.MODEL_SYSTEM_PROMPT.format(today=today, planets=results)
         messages = [
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": f"Escreva um horóscopo para o signo de {sign}. Responda em um único parágrafo. Use seus "
-                "seus conhecimentos. Seja engraçado e preciso, use metáforas, figuras de linguagem, sem clichês. "
+                "content": f"Escreva um horóscopo para o signo de {sign} com tom {mood}, focando em {theme}. "
+                "Responda em um único parágrafo. Use seus conhecimentos astrológicos e características únicas do signo. "
+                "Seja engraçado e preciso, use metáforas, figuras de linguagem, sem clichês. "
                 "Seja claro, evite ambiguidades. Arrisque, seja sinistro. Não comece com 'signo', 'hoje', 'o signo', "
                 "ou outros inícios genéricos. Garanta que o texto seja atemporal, e que as previsões sejam sempre bem "
-                "diferentes umas das outras. "
+                "diferentes umas das outras, explorando a personalidade única de cada signo. "
                 "Faça previsões arriscadas, seja o menos genérico possível. Seja muito ousado, dê conselhos e futuro "
                 "com exatidão (ex: 'você vai ganhar na loteria'), de forma unica e vidente, e sempre criativo, pra "
                 "garantir que a previsão seja incrível. O signo deve ter um papel central na previsão. A previsão deve "
@@ -66,13 +95,24 @@ class SignFetcherGPT(Fetcher):
         guess_of_the_day = ", ".join([f"{guess}" for guess in guesses])
         guess_of_the_day = f"{guess_of_the_day}."
 
-        # color of the day
+        # color of the day with more variety
+        color_styles = [
+            "cores místicas e envolventes", 
+            "tonalidades urbanas e modernas",
+            "cores da natureza e elementos",
+            "matizes emocionais e intensos",
+            "cores de pedras preciosas",
+            "tonalidades de alimentos e sabores"
+        ]
+        color_style = random.choice(color_styles)
+        
         messages = [
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": f"Responda com uma única palavra para uma cor, sem formatação. Use cores criativas e "
-                f"inusitadas, evite cores simples como apenas 'Vermelho' ou 'Azul'. Baseie-se na previsão: '{horoscope}'. ",
+                "content": f"Responda com uma única palavra para uma cor, sem formatação. Use {color_style}, "
+                f"evite cores simples como apenas 'Vermelho' ou 'Azul'. Baseie-se na previsão: '{horoscope}' e no tema {theme}. "
+                "Seja criativo com nomes de cores como 'âmbar-elétrico', 'violeta-cósmico', 'verde-jade-místico'.",
             },
         ]
         color_of_the_day = f"{self._client.make_request(messages)}"
