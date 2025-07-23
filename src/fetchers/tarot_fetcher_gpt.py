@@ -2,7 +2,7 @@ import random
 from datetime import datetime, timedelta
 
 from clients import OpenAIClient
-from fetchers import TarotFetcher
+from fetchers import TarotFetcher, SignFetcherGPT
 from modules import AstroModule
 
 

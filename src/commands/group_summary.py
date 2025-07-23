@@ -38,12 +38,7 @@ class GroupSummary(Command):
         return False
 
     def _store_message(self, message):
-        if (
-            self._is_user_authorized(
-                message.from_user.id, message.chat.type, message.chat_id
-            )
-            and message.text
-        ):
+        if self._is_user_authorized(message.from_user.id, message.chat.type, message.chat_id) and message.text:
             try:
                 message_data = create_message_data(message)
                 simplified_data = {
@@ -71,10 +66,7 @@ class GroupSummary(Command):
             messages = []
             for msg_data in list(message_buffer)[-limit:]:
                 message_text = msg_data["text"].lower()
-                contains_trigger = any(
-                    pattern.lower() in message_text
-                    for pattern in self._trigger_patterns
-                )
+                contains_trigger = any(pattern.lower() in message_text for pattern in self._trigger_patterns)
 
                 if not contains_trigger:
                     formatted_msg = f"{msg_data['user']}: {msg_data['text']}"
@@ -101,9 +93,7 @@ class GroupSummary(Command):
                 else:
                     message_dicts.append({"user": "Unknown", "text": msg})
 
-            anon_messages, user_mapping = privacy_manager.anonymize_messages(
-                message_dicts
-            )
+            anon_messages, user_mapping = privacy_manager.anonymize_messages(message_dicts)
 
             # reconstruct message text with anonymized usernames
             anon_text_lines = [f"{msg['user']}: {msg['text']}" for msg in anon_messages]
@@ -127,9 +117,7 @@ class GroupSummary(Command):
                 {"role": "user", "content": user_prompt},
             ]
 
-            summary = self._openai_client.make_request(
-                messages=openai_messages, max_tokens=400
-            )
+            summary = self._openai_client.make_request(messages=openai_messages, max_tokens=400)
 
             # de-anonymize the summary by replacing user hashes with real names
             if summary:
@@ -160,17 +148,13 @@ class GroupSummary(Command):
         if message_text and isinstance(message_text, bytes):
             message_text = message_text.decode("utf-8", errors="replace")
 
-        if not self._is_user_authorized(
-            message.from_user.id, message.chat.type, chat_id
-        ):
+        if not self._is_user_authorized(message.from_user.id, message.chat.type, chat_id):
             return
 
         try:
             self._store_message(message)
         except Exception as e:
-            logging.error(
-                f"GroupSummary processing stopped due to storage failure: {e}"
-            )
+            logging.error(f"GroupSummary processing stopped due to storage failure: {e}")
             return
 
         if not self._should_trigger(message_text):
@@ -204,13 +188,9 @@ class GroupSummary(Command):
 
             summary = self._summarize_messages(recent_messages)
 
-            response_text = (
-                f"6️⃣ falam eim!\n\n{summary}\n\nResumo gerado por Bidu-GPT."
-            )
+            response_text = f"6️⃣ falam eim!\n\n{summary}\n\nResumo gerado por Bidu-GPT."
 
-            context.bot.send_message(
-                chat_id=chat_id, text=response_text, parse_mode=ParseMode.HTML
-            )
+            context.bot.send_message(chat_id=chat_id, text=response_text, parse_mode=ParseMode.HTML)
 
             # update per-group cooldown timestamp after successful summary
             self._last_summary_times[chat_id] = time.time()

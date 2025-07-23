@@ -39,9 +39,7 @@ class Tarot(Command):
 
         # prepare heading
         if tarot_type == "daily":
-            heading = (
-                f"{data['date']} - Tarot do Dia de {data['display_name']}\n\n"  # noqa
-            )
+            heading = f"{data['date']} - Tarot do Dia de {data['display_name']}\n\n"  # noqa
         elif tarot_type == "info":
             heading = f"{data['date']} - Info de Tarot para {data['display_name']}\n\n"  # noqa
 
@@ -126,11 +124,9 @@ class Tarot(Command):
 
     def _process(self, update, context):
         telegram_message = super()._process(update, context)
-
+        
         # send typing indicator for longer processing commands
-        context.bot.send_chat_action(
-            chat_id=update.message.chat_id, action=ChatAction.TYPING
-        )
+        context.bot.send_chat_action(chat_id=update.message.chat_id, action=ChatAction.TYPING)
 
         # fetch user data
         userid = update.message.from_user.id

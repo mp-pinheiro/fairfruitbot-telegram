@@ -17,9 +17,7 @@ class OpenAIClient:
 
     def __init__(self) -> None:
         try:
-            self._client = OpenAI(
-                api_key=OpenAIClient.OPENAI_API_KEY, base_url=OpenAIClient.BASE_URL
-            )
+            self._client = OpenAI(api_key=OpenAIClient.OPENAI_API_KEY, base_url=OpenAIClient.BASE_URL)
         except OpenAIError:
             raise UsageError(
                 "Could not initialize OpenAI client. Make sure you have the `OPENAI_API_KEY` environment variable set."
