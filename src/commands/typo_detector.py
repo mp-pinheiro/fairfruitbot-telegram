@@ -20,7 +20,6 @@ class TypoDetector(Command):
         self._last_triggered_words = {}  # per-group cooldowns
         self._openai_client = OpenAIClient()
 
-
     def _extract_words(self, message_text):
         if not message_text:
             return []
@@ -37,7 +36,7 @@ class TypoDetector(Command):
             # anonymize messages before sending to GPT
             privacy_manager = PrivacyManager()
             anon_messages, _ = privacy_manager.anonymize_messages(context_messages)
-            
+
             examples = [
                 "User says 'me' repeatedly → Actually meant 'né' (Brazilian Portuguese for 'right?')",
                 "User says 'casa' repeatedly → Actually meant 'cada' (each instead of house)",
@@ -46,7 +45,9 @@ class TypoDetector(Command):
                 "User says 'tendeyu' repeatedly → Actually meant 'entendeu' (understood)",
             ]
 
-            context = "\n".join([f"{msg['user']}: {msg['text']}" for msg in anon_messages[-5:]])
+            context = "\n".join(
+                [f"{msg['user']}: {msg['text']}" for msg in anon_messages[-5:]]
+            )
 
             messages = [
                 {
@@ -79,9 +80,13 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
             return True
 
     def _store_message(self, message):
-        if self._is_user_authorized(message.from_user.id, message.chat.type, message.chat_id):
+        if self._is_user_authorized(
+            message.from_user.id, message.chat.type, message.chat_id
+        ):
             try:
-                text_content = message.text or (message.caption if hasattr(message, "caption") else None)
+                text_content = message.text or (
+                    message.caption if hasattr(message, "caption") else None
+                )
 
                 if text_content:
                     message_data = create_message_data(message)
@@ -92,7 +97,7 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
                     chat_id = message.chat_id
                     if chat_id not in self._message_buffers:
                         self._message_buffers[chat_id] = deque(maxlen=50)
-                    
+
                     self._message_buffers[chat_id].append(message_data)
             except Exception as e:
                 logging.error(f"Failed to store message: {e}")
@@ -107,7 +112,6 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
 
         current_words = self._extract_words(current_text)
 
-
         if not current_words:
             return None
 
@@ -116,7 +120,11 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
         last_triggered_word = self._last_triggered_words.get(chat_id)
 
         # reset cooldown if user says something different
-        if current_words and last_triggered_word and last_triggered_word not in current_words:
+        if (
+            current_words
+            and last_triggered_word
+            and last_triggered_word not in current_words
+        ):
             self._last_triggered_words[chat_id] = None
             last_triggered_word = None
 
@@ -124,7 +132,6 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
             # skip if we already triggered on this word recently
             if word == last_triggered_word:
                 continue
-
 
             original_msg = None
             different_users = set()
@@ -154,7 +161,6 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
             if original_msg is None:
                 original_msg = current_msg_data
 
-
             if len(different_users) >= self._min_users:
                 is_typo = self._is_typo_via_gpt(word, all_messages_with_word)
 
@@ -169,14 +175,17 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
         if not message:
             return
 
-        text_content = message.text or (message.caption if hasattr(message, "caption") else None)
+        text_content = message.text or (
+            message.caption if hasattr(message, "caption") else None
+        )
         if not text_content:
             return
 
         chat_id = message.chat_id
 
-
-        if not self._is_user_authorized(message.from_user.id, message.chat.type, chat_id):
+        if not self._is_user_authorized(
+            message.from_user.id, message.chat.type, chat_id
+        ):
             return
 
         try:
@@ -187,7 +196,7 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
             if original_msg:
                 # send typing indicator now that we're confirmed to send a response
                 context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
-                
+
                 # get the criminal (user who made the original typo)
                 criminal_user_id = original_msg["user_id"]
 
@@ -196,17 +205,19 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
                 repeated_users_data = {}  # store user_id -> username mapping
                 message_buffer = self._message_buffers.get(chat_id, deque())
                 last_triggered_word = self._last_triggered_words.get(chat_id)
-                
+
                 for msg_data in message_buffer:
                     msg_words = self._extract_words(msg_data["text"])
                     if any(word == last_triggered_word for word in msg_words):
                         if msg_data["user_id"] != criminal_user_id:
                             repeated_users.add(msg_data["user_id"])
-                            repeated_users_data[msg_data["user_id"]] = msg_data.get("user", f"Usuário{msg_data['user_id']}")
+                            repeated_users_data[msg_data["user_id"]] = msg_data.get(
+                                "user", f"Usuário{msg_data['user_id']}"
+                            )
 
                 # get criminal username from original message
                 criminal_username = original_msg.get("user", "Anônimo")
-                
+
                 # build the ultra-sarcastic wanted poster
                 response_text = "🚨 ALERTA MÁXIMO: ERRO ORTOGRÁFICO DETECTADO 🚨\n\n"
                 response_text += f"🎯 SUSPEITO PRINCIPAL: {criminal_username}\n"
@@ -243,8 +254,9 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
 
     def setup(self, dispatcher):
         text_handler = MessageHandler(Filters.text & Filters.group, self._process)
-        photo_handler = MessageHandler(Filters.photo & Filters.group & Filters.caption, self._process)
+        photo_handler = MessageHandler(
+            Filters.photo & Filters.group & Filters.caption, self._process
+        )
 
         dispatcher.add_handler(text_handler, group=1)
         dispatcher.add_handler(photo_handler, group=1)
-

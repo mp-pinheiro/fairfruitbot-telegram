@@ -1,7 +1,8 @@
+import random
 from datetime import datetime, timedelta
 
 from clients import OpenAIClient
-from fetchers import TarotFetcher, SignFetcherGPT
+from fetchers import TarotFetcher
 from modules import AstroModule
 
 
@@ -59,15 +60,15 @@ class TarotFetcherGPT(TarotFetcher):
         results = self._astro.get_astro_for_signs(now)
 
         # Add randomization for more variety
-        persona = random.choice(self.TAROT_PERSONAS)
-        style = random.choice(self.TAROT_STYLES)
+        tarot_reader = random.choice(self.TAROT_PERSONAS)
+        narrative_style = random.choice(self.TAROT_STYLES)
 
         system_prompt = self.TAROT_SYSTEM_PROMPT.format(today=today, planets=results)
         messages = [
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": f"Escreva uma previsão de tarô para a carta: '{card}' como um {persona}, usando {style}. "
+                "content": f"Escreva uma previsão de tarô para a carta: '{card}' como um {tarot_reader}, usando {narrative_style}. "
                 "Responda em um único parágrafo. Use seus conhecimentos de tarô e simbolismo das cartas. "
                 "Seja místico e envolvente, use metáforas esotéricas, elementos sobrenaturais, sem clichês banais. "
                 "Seja enigmático, evite previsões óbvias. Mergulhe no simbolismo da carta. Não comece com frases "

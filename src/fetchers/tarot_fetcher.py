@@ -149,7 +149,9 @@ class TarotFetcher(Fetcher):
 
     def __init__(self):
         super().__init__()
-        self._url = "https://joaobidu.com.br/oraculos/tarot-online/carta-{card}/"  # noqa
+        self._url = (
+            "https://joaobidu.com.br/oraculos/tarot-online/carta-{card}/"  # noqa
+        )
         self._wiki_url = "https://megamitensei.fandom.com/wiki/{arcana}_Arcana"
 
         # load persona data
@@ -158,7 +160,9 @@ class TarotFetcher(Fetcher):
 
     def _make(self, arcana):
         # find category in category map values
-        category = next(key for key, value in TarotFetcher.category_map.items() if value == arcana)
+        category = next(
+            key for key, value in TarotFetcher.category_map.items() if value == arcana
+        )
 
         # fetch title
         title = arcana.upper()

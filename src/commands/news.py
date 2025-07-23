@@ -36,7 +36,9 @@ class News(Command):
         data["date"] = get_date()
         message = self._make_prediction_message(data)
 
-        context.bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode=ParseMode.HTML)
+        context.bot.send_message(
+            chat_id=update.message.chat_id, text=message, parse_mode=ParseMode.HTML
+        )
 
     def setup(self, dispatcher):
         inline_handler = CommandHandler(self._command, self._process)

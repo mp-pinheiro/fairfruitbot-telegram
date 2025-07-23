@@ -32,6 +32,16 @@ class SignFetcherGPT(Fetcher):
         "mistérios e segredos",
         "sorte e oportunidades",
         "mudanças inesperadas",
+        "criatividade e inspiração",
+        "espiritualidade e autoconhecimento",
+        "desafios e superação",
+        "paixões e desejos",
+        "liberdade e independência",
+        "comunicação e relacionamentos sociais",
+        "transformação pessoal",
+        "intuição e sabedoria interior",
+        "ambições e conquistas",
+        "energias cósmicas e influências planetárias",
     ]
 
     HOROSCOPE_MOODS = [
