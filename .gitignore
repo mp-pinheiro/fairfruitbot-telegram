@@ -3,3 +3,6 @@ __pycache__/
 .env
 collaborators.json
 *.bsp
+
+# Data files should not be versioned
+data/typo_counts.json
