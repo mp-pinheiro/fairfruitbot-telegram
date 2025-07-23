@@ -20,10 +20,10 @@ class SignFetcherGPT(Fetcher):
         "Inclua outros temas, mude a ordem, crie previsões diferenciadas e com personalidade. Crie narrativas "
         "envolventes e interessantes. Faça previsões ousadas, chute mesmo. Seja impessoal, sem nomes ou lugares. "
     )
-    
+
     HOROSCOPE_THEMES = [
         "amor e relacionamentos",
-        "trabalho e carreira", 
+        "trabalho e carreira",
         "dinheiro e finanças",
         "família e amizades",
         "saúde e bem-estar",
@@ -31,20 +31,20 @@ class SignFetcherGPT(Fetcher):
         "estudos e conhecimento",
         "mistérios e segredos",
         "sorte e oportunidades",
-        "mudanças inesperadas"
+        "mudanças inesperadas",
     ]
-    
+
     HOROSCOPE_MOODS = [
         "otimista e enérgico",
         "misterioso e intrigante",
-        "bem-humorado e descontraído", 
+        "bem-humorado e descontraído",
         "dramático e intenso",
         "sábio e reflexivo",
         "irreverente e moderno",
         "poético e romântico",
-        "direto e sem papas na língua"
+        "direto e sem papas na língua",
     ]
-    
+
     PREDICTION_SIZE_CHARS = 420
 
     def __init__(self):
@@ -64,8 +64,10 @@ class SignFetcherGPT(Fetcher):
         # horoscope prediction with randomized elements
         theme = random.choice(self.HOROSCOPE_THEMES)
         mood = random.choice(self.HOROSCOPE_MOODS)
-        
-        system_prompt = SignFetcherGPT.MODEL_SYSTEM_PROMPT.format(today=today, planets=results)
+
+        system_prompt = SignFetcherGPT.MODEL_SYSTEM_PROMPT.format(
+            today=today, planets=results
+        )
         messages = [
             {"role": "system", "content": system_prompt},
             {
@@ -97,15 +99,15 @@ class SignFetcherGPT(Fetcher):
 
         # color of the day with more variety
         color_styles = [
-            "cores místicas e envolventes", 
+            "cores místicas e envolventes",
             "tonalidades urbanas e modernas",
             "cores da natureza e elementos",
             "matizes emocionais e intensos",
             "cores de pedras preciosas",
-            "tonalidades de alimentos e sabores"
+            "tonalidades de alimentos e sabores",
         ]
         color_style = random.choice(color_styles)
-        
+
         messages = [
             {"role": "system", "content": system_prompt},
             {

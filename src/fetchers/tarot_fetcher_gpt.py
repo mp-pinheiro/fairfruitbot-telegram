@@ -18,25 +18,25 @@ class TarotFetcherGPT(TarotFetcher):
         "Seja mais teatral e menos científico que um astrólogo. Use linguagem coloquial misturada com "
         "misticismo - como um oráculo moderno que fala gírias."
     )
-    
+
     TAROT_PERSONAS = [
         "sábio ancestral que sussurra segredos",
-        "oráculo irreverente e moderno", 
+        "oráculo irreverente e moderno",
         "vidente dramático e teatral",
         "místico brincalhão e enigmático",
         "profeta urbano com linguagem de rua",
-        "bruxa contemporânea e perspicaz"
+        "bruxa contemporânea e perspicaz",
     ]
-    
+
     TAROT_STYLES = [
         "tom de suspense e mistério",
-        "estilo de conversa íntima e conspiratorial", 
+        "estilo de conversa íntima e conspiratorial",
         "linguagem de conto de fadas sombrio",
         "narrativa de filme noir místico",
         "prosa poética e envolvente",
-        "estilo de podcast sobrenatural"
+        "estilo de podcast sobrenatural",
     ]
-    
+
     PREDICTION_SIZE_CHARS = 320
 
     def __init__(self):
@@ -57,11 +57,11 @@ class TarotFetcherGPT(TarotFetcher):
         # tarot prediction with randomized style
         now = now.isoformat()
         results = self._astro.get_astro_for_signs(now)
-        
+
         # Add randomization for more variety
         persona = random.choice(self.TAROT_PERSONAS)
         style = random.choice(self.TAROT_STYLES)
-        
+
         system_prompt = self.TAROT_SYSTEM_PROMPT.format(today=today, planets=results)
         messages = [
             {"role": "system", "content": system_prompt},
