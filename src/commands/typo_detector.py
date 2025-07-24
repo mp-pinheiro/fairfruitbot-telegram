@@ -7,6 +7,7 @@ from telegram.ext import MessageHandler, Filters
 from environment import Environment
 from utils import create_message_data
 from modules import PrivacyManager
+from modules.typo_tracker import TypoTracker
 from clients.openai_client import OpenAIClient
 from commands.command import Command
 
@@ -19,6 +20,7 @@ class TypoDetector(Command):
         self._min_users = int(self._env._validate_optional("MIN_USERS", "3"))
         self._last_triggered_words = {}  # per-group cooldowns
         self._openai_client = OpenAIClient()
+        self._typo_tracker = TypoTracker()
 
 
     def _extract_words(self, message_text):
@@ -190,22 +192,14 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
                 
                 # get the criminal (user who made the original typo)
                 criminal_user_id = original_msg["user_id"]
-
-                # get all users who repeated the typo (for the reward)
-                repeated_users = set()
-                repeated_users_data = {}  # store user_id -> username mapping
-                message_buffer = self._message_buffers.get(chat_id, deque())
+                criminal_username = original_msg.get("user", "Anônimo")
                 last_triggered_word = self._last_triggered_words.get(chat_id)
                 
-                for msg_data in message_buffer:
-                    msg_words = self._extract_words(msg_data["text"])
-                    if any(word == last_triggered_word for word in msg_words):
-                        if msg_data["user_id"] != criminal_user_id:
-                            repeated_users.add(msg_data["user_id"])
-                            repeated_users_data[msg_data["user_id"]] = msg_data.get("user", f"Usuário{msg_data['user_id']}")
-
-                # get criminal username from original message
-                criminal_username = original_msg.get("user", "Anônimo")
+                # add typo to tracker for the criminal
+                self._typo_tracker.add_typo(criminal_user_id, criminal_username, last_triggered_word)
+                
+                # get top users by error count for ranking
+                top_users = self._typo_tracker.get_top_users(3)
                 
                 # build the ultra-sarcastic wanted poster
                 response_text = "🚨 ALERTA MÁXIMO: ERRO ORTOGRÁFICO DETECTADO 🚨\n\n"
@@ -213,16 +207,12 @@ Is "{word}" likely a typo? Answer only YES or NO.""",
                 response_text += f"⚡ CRIME HEDIONDO: Escreveu '{last_triggered_word}'\n"
                 response_text += f"📱 GRAVIDADE: Máxima (errar no Telegram!!)\n\n"
 
-                if repeated_users:
-                    # split the reward equally among heroes
-                    total_reward = 10000.00
-                    individual_reward = total_reward / len(repeated_users)
-                    response_text += "🏆 HERÓIS NACIONAIS:\n"
-                    for user_id in repeated_users:
-                        username = repeated_users_data.get(user_id, "Justiceiro")
-                        response_text += f"• {username} - R$ {individual_reward:.2f}\n"
+                if top_users:
+                    response_text += "🏆 HERÓIS NACIONAIS (Top 3 Cagadores de Erro):\n"
+                    for i, (username, error_count) in enumerate(top_users, 1):
+                        response_text += f"{i}. {username} - {error_count} erro{'s' if error_count != 1 else ''}\n"
                 else:
-                    response_text += "🏆 NENHUM HERÓI NACIONAL\n"
+                    response_text += "🏆 NENHUM HERÓI NACIONAL (ainda)\n"
 
                 response_text += "\n🤡 PARABÉNS GUYZ, COMEDY ACHIEVED! 🤡"
 
