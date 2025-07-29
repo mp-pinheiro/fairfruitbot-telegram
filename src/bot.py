@@ -8,14 +8,14 @@ locale.setlocale(locale.LC_ALL, "C.UTF-8")
 
 from telegram.ext import Updater
 
-from commands import Sign, Tarot, SignGPT, TarotGPT, GroupSummary, TypoDetector
+from commands import Sign, Tarot, SignGPT, TarotGPT, GroupSummary, TypoDetector, Salmo
 from environment import Environment
 
 # load env
 env = Environment()
 
 # load commands
-commands = [Sign(), Tarot(), SignGPT(), TarotGPT()]
+commands = [Sign(), Tarot(), SignGPT(), TarotGPT(), Salmo()]
 
 # load message handlers (non-command handlers)
 message_handlers = [GroupSummary(), TypoDetector()]
