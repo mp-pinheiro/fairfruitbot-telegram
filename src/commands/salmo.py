@@ -1,9 +1,10 @@
-from fetchers.salmo_fetcher import SalmoFetcher
-from telegram import ParseMode
+from telegram import ParseMode, ChatAction
 from telegram.ext import CommandHandler
 from utils import get_date
 
 from commands import Command
+from fetchers import SalmoFetcher
+from clients import OpenAIClient
 
 
 class Salmo(Command):
@@ -11,23 +12,38 @@ class Salmo(Command):
         super().__init__()
         self._command = "salmo"
         self._fetcher = SalmoFetcher()
+        self._client = OpenAIClient()
+
+    def _extract_key_verse(self, psalm_content, psalm_title):
+        """Use OpenAI to extract the most important verse from the psalm."""
+        system_prompt = (
+            "Você é um especialista em textos bíblicos e espiritualidade. Sua tarefa é identificar "
+            "o versículo mais importante e impactante de um salmo completo. Escolha o versículo que "
+            "melhor representa a essência e mensagem central do salmo. Responda apenas com o versículo "
+            "escolhido, sem explicações adicionais."
+        )
+        
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user", 
+                "content": f"Do seguinte salmo '{psalm_title}', extraia o versículo mais importante:\n\n{psalm_content}"
+            }
+        ]
+        
+        return self._client.make_request(messages)
 
     def _make_psalm_message(self, data):
-        """Format the psalm data into a Telegram message."""
+        """Format the psalm data into a Telegram message following the pattern of other commands."""
         title = data["title"]
-        content = data["content"]
+        key_verse = data["key_verse"]
         url = data["url"]
 
-        # Prepare heading with date
-        heading = f"{get_date()} - <b>{title}</b>\n\n"
+        # Prepare heading with date following the pattern of other commands
+        heading = f"{get_date()} - {title}\n\n"
 
-        # Format content - limit length for Telegram
-        max_content_length = 3000  # Leave room for title and footer
-        if len(content) > max_content_length:
-            content = content[:max_content_length] + "..."
-
-        # Build message body
-        body = f"{content}\n\n"
+        # Format body following the pattern of sign/tarot commands
+        body = f"{key_verse}\n\n"
         body += f'<a href="{url}">🔗 Ver salmo completo</a>'
 
         # Combine heading and body
@@ -39,14 +55,20 @@ class Salmo(Command):
         """Process the /salmo command."""
         super()._process(update, context)
 
-        # Show typing indicator
-        self._send_typing_action(context, update.message.chat_id)
+        # Send typing indicator while fetching and processing
+        context.bot.send_chat_action(
+            chat_id=update.effective_chat.id, action=ChatAction.TYPING
+        )
 
         # Fetch psalm data
-        data = self._fetcher.fetch()
+        psalm_data = self._fetcher.fetch()
+        
+        # Extract the most important verse using AI
+        key_verse = self._extract_key_verse(psalm_data["content"], psalm_data["title"])
+        psalm_data["key_verse"] = key_verse
 
         # Format message
-        message = self._make_psalm_message(data)
+        message = self._make_psalm_message(psalm_data)
 
         # Send response
         context.bot.send_message(

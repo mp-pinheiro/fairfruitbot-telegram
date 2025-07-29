@@ -51,8 +51,8 @@ class TestSalmoFetcher(unittest.TestCase):
         result = self.salmo_fetcher.fetch()
 
         self.assertIsInstance(result, dict)
-        self.assertEqual(result["title"], "Erro")
-        self.assertIn("Erro ao buscar o salmo", result["content"])
+        self.assertEqual(result["title"], "Erro ao carregar salmo")
+        self.assertIn("Não foi possível buscar o salmo do dia", result["content"])
 
     def test_salmo_fetcher_initialization(self):
         """Test that SalmoFetcher initializes correctly."""

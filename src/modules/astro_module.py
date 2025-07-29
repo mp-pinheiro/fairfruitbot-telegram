@@ -46,13 +46,9 @@ class AstroModule:
             if planet_key == "sun":
                 coord = get_body("sun", time_obj).transform_to(GeocentricTrueEcliptic())
             elif planet_key == "moon":
-                coord = get_body("moon", time_obj).transform_to(
-                    GeocentricTrueEcliptic()
-                )
+                coord = get_body("moon", time_obj).transform_to(GeocentricTrueEcliptic())
             else:
-                coord = get_body(planet_key, time_obj).transform_to(
-                    GeocentricTrueEcliptic()
-                )
+                coord = get_body(planet_key, time_obj).transform_to(GeocentricTrueEcliptic())
         ra = coord.lon.deg % 360
         return ra, coord.lat.deg
 
@@ -63,10 +59,7 @@ class AstroModule:
         return "Unknown"
 
     def get_positions(self, datetime_obj):
-        positions = {
-            planet: self._get_planet_position(key, datetime_obj)
-            for planet, key in self.planets.items()
-        }
+        positions = {planet: self._get_planet_position(key, datetime_obj) for planet, key in self.planets.items()}
         results = {}
         for planet, (ra, dec) in positions.items():
             if ra is not None and dec is not None:

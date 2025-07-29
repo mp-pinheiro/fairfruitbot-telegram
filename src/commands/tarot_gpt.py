@@ -21,9 +21,7 @@ class TarotGPT(Tarot):
 
         # prepare heading
         if tarot_type == "daily":
-            heading = (
-                f"{data['date']} - Tarot do Dia de {data['display_name']}\n\n"  # noqa
-            )
+            heading = f"{data['date']} - Tarot do Dia de {data['display_name']}\n\n"  # noqa
         elif tarot_type == "info":
             heading = f"{data['date']} - Info de Tarot para {data['display_name']}\n\n"  # noqa
 

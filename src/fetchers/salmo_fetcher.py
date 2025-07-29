@@ -1,27 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-try:
-    from crawl4ai import AsyncWebCrawler
-
-    CRAWL4AI_AVAILABLE = True
-except ImportError:
-    CRAWL4AI_AVAILABLE = False
-
-
-class Fetcher:
-    def __init__(self):
-        # define the base urls (add others in child classes)
-        self._base_url = "https://joaobidu.com.br"
-
-    def _make_soup(self, url):
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, "html.parser")
-
-        return soup
-
-    def fetch(self, args=None):
-        pass
+from fetchers import Fetcher
 
 
 class SalmoFetcher(Fetcher):
@@ -29,25 +9,15 @@ class SalmoFetcher(Fetcher):
         super().__init__()
         self._url = "https://www.bibliaon.com/salmo_do_dia/"
 
-    def _fetch_with_crawl4ai(self):
-        """Fetch psalm content using crawl4ai when available."""
-        if not CRAWL4AI_AVAILABLE:
-            raise ImportError("crawl4ai is not available")
-
-        # This will be implemented when crawl4ai is properly installed
-        # For now, using a fallback approach
-        return self._fetch_with_requests()
-
-    def _fetch_with_requests(self):
-        """Fallback method using requests + BeautifulSoup."""
+    def _fetch_psalm_content(self):
+        """Fetch psalm content using requests + BeautifulSoup."""
         try:
             soup = self._make_soup(self._url)
 
             # Try to find the psalm content using common selectors
-            # Since we can't access the actual site, we'll use common patterns
             psalm_selectors = [
                 ".salmo",
-                ".psalm",
+                ".psalm", 
                 ".daily-psalm",
                 ".salmo-do-dia",
                 ".bible-verse",
@@ -88,14 +58,11 @@ class SalmoFetcher(Fetcher):
 
         except Exception as e:
             return {
-                "title": "Erro",
-                "content": f"Erro ao buscar o salmo: {str(e)}",
+                "title": "Erro ao carregar salmo",
+                "content": f"Não foi possível buscar o salmo do dia: {str(e)}",
                 "url": self._url,
             }
 
     def fetch(self, args=None):
         """Fetch daily psalm content."""
-        if CRAWL4AI_AVAILABLE:
-            return self._fetch_with_crawl4ai()
-        else:
-            return self._fetch_with_requests()
+        return self._fetch_psalm_content()
