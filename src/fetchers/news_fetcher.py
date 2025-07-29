@@ -17,7 +17,9 @@ class NewsFetcher(Fetcher):
             if element.name == "p":
                 if element.string and element.string.strip():
                     # probably a title
-                    if not element.get("class") or not (element.get("class") and element.get("class")[0] == "idCP"):
+                    if not element.get("class") or not (
+                        element.get("class") and element.get("class")[0] == "idCP"
+                    ):
                         # gets rid of weird id on last element
                         summary += f"\n\n<b>{element.string.strip()}</b>\n"
                 else:

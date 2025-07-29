@@ -38,7 +38,11 @@ class Environment(metaclass=Singleton):
             return []
 
         try:
-            ids = [int(id_str.strip()) for id_str in env_var_value.split(",") if id_str.strip()]
+            ids = [
+                int(id_str.strip())
+                for id_str in env_var_value.split(",")
+                if id_str.strip()
+            ]
             return ids
         except ValueError as e:
             logging.error(f"Invalid ID format in environment variable: {e}")
@@ -46,7 +50,10 @@ class Environment(metaclass=Singleton):
 
     def __init__(self):
         # set the logging stuff
-        logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
+        logging.basicConfig(
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            level=logging.INFO,
+        )
 
         # set env vars
         self.telegram_token = self._validate("TELEGRAM_TOKEN")
@@ -66,7 +73,10 @@ class Environment(metaclass=Singleton):
             logging.info("Bot access open to all users")
 
         if self.monitored_group_ids:
-            logging.info(f"Message monitoring enabled for group IDs: {self.monitored_group_ids}")
+            logging.info(
+                f"Message monitoring enabled for group IDs: {self.monitored_group_ids}"
+            )
         else:
-            logging.info("No monitored groups configured - GroupSummary and TypoDetector disabled")
-
+            logging.info(
+                "No monitored groups configured - GroupSummary and TypoDetector disabled"
+            )

@@ -4,7 +4,7 @@ import sys
 from unittest.mock import Mock, patch
 
 # Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 class TestSalmoFetcher(unittest.TestCase):
@@ -12,9 +12,10 @@ class TestSalmoFetcher(unittest.TestCase):
         """Set up test fixtures."""
         # Import the fetcher directly to avoid circular imports
         from fetchers.salmo_fetcher import SalmoFetcher
+
         self.salmo_fetcher = SalmoFetcher()
 
-    @patch('fetchers.salmo_fetcher.requests.get')
+    @patch("fetchers.salmo_fetcher.requests.get")
     def test_salmo_fetcher_with_successful_response(self, mock_get):
         """Test SalmoFetcher with a successful response."""
         # Mock successful response
@@ -41,7 +42,7 @@ class TestSalmoFetcher(unittest.TestCase):
         self.assertIn("url", result)
         self.assertEqual(result["url"], "https://www.bibliaon.com/salmo_do_dia/")
 
-    @patch('fetchers.salmo_fetcher.requests.get')
+    @patch("fetchers.salmo_fetcher.requests.get")
     def test_salmo_fetcher_with_error(self, mock_get):
         """Test SalmoFetcher with network error."""
         # Mock network error
@@ -55,7 +56,9 @@ class TestSalmoFetcher(unittest.TestCase):
 
     def test_salmo_fetcher_initialization(self):
         """Test that SalmoFetcher initializes correctly."""
-        self.assertEqual(self.salmo_fetcher._url, "https://www.bibliaon.com/salmo_do_dia/")
+        self.assertEqual(
+            self.salmo_fetcher._url, "https://www.bibliaon.com/salmo_do_dia/"
+        )
 
 
 if __name__ == "__main__":

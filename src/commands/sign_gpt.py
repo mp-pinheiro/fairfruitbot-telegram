@@ -42,7 +42,9 @@ class SignGPT(Sign):
         telegram_message = super(Sign, self)._process(update, context)
 
         # send typing indicator while generating prediction
-        context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
+        context.bot.send_chat_action(
+            chat_id=update.effective_chat.id, action=ChatAction.TYPING
+        )
 
         args = context.args
         query = " ".join(args)

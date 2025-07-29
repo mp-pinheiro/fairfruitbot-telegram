@@ -42,7 +42,13 @@ def prepare_message(msg, hard_parse=False):
         # ignore markdown monospace character
         return msg.replace("\\`", "`")
     else:
-        return msg.replace("-", "\\-").replace(".", "\\.").replace("(", "\\(").replace(")", "\\)").replace("!", "\\!")
+        return (
+            msg.replace("-", "\\-")
+            .replace(".", "\\.")
+            .replace("(", "\\(")
+            .replace(")", "\\)")
+            .replace("!", "\\!")
+        )
 
 
 # register exception handler
