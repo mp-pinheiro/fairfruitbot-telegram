@@ -6,3 +6,4 @@ from .sign_gpt import *
 from .tarot_gpt import *
 from .group_summary import *
 from .typo_detector import *
+from .salmo import *
