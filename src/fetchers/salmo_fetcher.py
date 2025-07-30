@@ -34,8 +34,10 @@ class SalmoFetcher(Fetcher):
             # Try to find the psalm content using multiple strategies
             psalm_content = None
             
-            # Strategy 1: Look for common Portuguese religious website selectors
+            # Strategy 1: Look for specific salmo content selectors (prioritize known working ones)
             content_selectors = [
+                ".salmo_dia_card_content",  # primary selector for bibliaon.com
+                ".salmo_dia_card",
                 ".salmo", ".psalm", ".daily-psalm", ".salmo-do-dia", ".salmo_do_dia",
                 ".bible-verse", ".verse", ".versiculo", ".texto-biblico",
                 ".content-text", ".entry-content", ".post-content", 

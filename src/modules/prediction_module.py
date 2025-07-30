@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from fetchers import SignFetcherGPT, TarotFetcherGPT
+from fetchers import SignFetcherGPT, TarotFetcherGPT, SalmoFetcherGPT
 from modules import Singleton
 
 
@@ -10,10 +10,12 @@ class PredictionModule(metaclass=Singleton):
         self._fetchers = {
             "sign": SignFetcherGPT(),
             "tarot": TarotFetcherGPT(),
+            "salmo": SalmoFetcherGPT(),
         }
         self._predictions = {
             "sign": {},
             "tarot": {},
+            "salmo": {},
         }
 
     def _make_prediction(self, module, **kwargs):
@@ -50,3 +52,6 @@ class PredictionModule(metaclass=Singleton):
 
     def get_tarot_prediction(self, card):
         return self._get_prediction("tarot", card, card=card)
+
+    def get_salmo_prediction(self):
+        return self._get_prediction("salmo", "daily")

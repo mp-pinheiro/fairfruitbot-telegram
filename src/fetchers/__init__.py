@@ -5,3 +5,4 @@ from .news_fetcher import *
 from .sign_fetcher_gpt import *
 from .tarot_fetcher_gpt import *
 from .salmo_fetcher import *
+from .salmo_fetcher_gpt import *
